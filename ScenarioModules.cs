@@ -19,14 +19,15 @@ using UnityEngine;
 using UnityEngine.Events;
 
 namespace KerbalWitchery {
-
     // ScenarioCreationOptions.AddToNewCareerGames | ScenarioCreationOptions.AddToExistingCareerGames
-    [KSPScenario(ScenarioCreationOptions.None, new GameScenes[2] { GameScenes.SPACECENTER, GameScenes.EDITOR })]
-    public class KWAdmin : ScenarioModule {
+    [KSPScenario(ScenarioCreationOptions.None, new GameScenes[1] { GameScenes.SPACECENTER })]
+    public class KWCareer : ScenarioModule {
         
         private static readonly Dictionary<ProgType, string[]> goals = GameDatabase.Instance.GetConfigNode("KerbalWitchery/KWAdminPrograms").GetNodes().ToDictionary(n =>
             (ProgType)Enum.Parse(typeof(ProgType), n.name), n => n.GetValues().ToArray());
         private static List<Program> programs;
+
+        public static string hero;
         public void Start() {
             
 
@@ -35,13 +36,14 @@ namespace KerbalWitchery {
 
         }
         public override void OnLoad(ConfigNode node) {
-            programs = node.HasNode("PROGRAM") ? node.GetNodes("PROGRAM").Select(n => new Program(n)).ToList() : goals.Keys.Select(t => new Program(t)).ToList();
-
+            // programs = node.HasNode("PROGRAM") ? node.GetNodes("PROGRAM").Select(n => new Program(n)).ToList() : goals.Keys.Select(t => new Program(t)).ToList();
+            hero = node.GetValue("hero");
 
         }
         public override void OnSave(ConfigNode node) {
+            node.AddValue("hero", hero);
 
-            programs.ForEach(p => p.Save(node));
+            // programs.ForEach(p => p.Save(node));
 
         }
 
@@ -113,7 +115,7 @@ namespace KerbalWitchery {
         }
     }
 
-    [KSPScenario(ScenarioCreationOptions.None,
+    [KSPScenario(ScenarioCreationOptions.AddToNewCareerGames | ScenarioCreationOptions.AddToExistingCareerGames,
         new GameScenes[4] { GameScenes.SPACECENTER, GameScenes.EDITOR, GameScenes.FLIGHT, GameScenes.TRACKSTATION })]
     public class KWAgencies : ScenarioModule {
         public static List<Agency> AList { get; private set; }
@@ -149,7 +151,7 @@ namespace KerbalWitchery {
         public static Agency Player() => AList.FirstOrDefault(a => a.Leader != "#KWLOC_aiControlled");
         public static bool NewPlayer() => Player() == null;
         public static bool PlayerIsAgency(Agency agency) => agency.Name == Player()?.Name;
-        public static bool PlayerIsRnD() => Player()?.Name == "Research & Development Department";
+        public static bool IsRnD(Agency agency) => agency.Name == "Research & Development Department";
         public static Agency GetAgency(Agent agent) => AList.FirstOrDefault(a => a.Name == agent.Name);
         public static Agency GetAgency(string name) => AList.FirstOrDefault(a => a.Name == name);
         public static Agency GetManufacturer(AvailablePart part) => AList.FirstOrDefault(a => a.Agent().Title == part.manufacturer);
@@ -178,8 +180,10 @@ namespace KerbalWitchery {
         }
         public static void Takeover(Agency agency) {
             HighLogic.CurrentGame.flagURL = agency.Agent().LogoURL;
+
             if (NewPlayer()) {
                 agency.SetPlayer();
+                UpdatePlayerCurrencies();
                 // KWUtil.UnlockTech("Administration");
                 // KWUtil.UpgradeFacility(SpaceCenterFacility.Administration);
             } else {
@@ -206,12 +210,11 @@ namespace KerbalWitchery {
             return $"{Localizer.Format("#KWLOC_standing")} <color={descs[Mathf.Clamp((int)Math.Floor(((80 + GetStanding(agency)) / 200) * 5), 0, 4)]} ({GetStanding(agency):N0})</color>";
         }
         public static bool PartThresholdMet(AvailablePart part) {
-            //if (!KWUtil.CareerOpts().agencyInfReq) return true;
-            //Agency agency = GetManufacturer(part);
-            //if (agency == null) return true;
-            //if (GetStanding(agency) < KWUtil.CareerOpts().infMin) return false;
-            //return Mathf.Max(GetStanding(agency), KWUtil.CareerOpts().partInfThrs) >= part.entryCost / 1000;
-            return true;
+            if (!KWUtil.CareerOpts().partsReqSts) return true;
+            Agency agency = GetManufacturer(part);
+            if (agency == null) return true;
+            if (GetStanding(agency) < KWUtil.CareerOpts().minStAgency) return false;
+            return Mathf.Max(GetStanding(agency) * 1000, KWUtil.CareerOpts().partStThrs) >= part.entryCost;
         }
         public static int PricePart(AvailablePart part) => PlayerIsAgency(GetManufacturer(part)) ? (int)Math.Round(part.entryCost * 0.666) : part.entryCost;
         public static void OrderPart(AvailablePart part, bool store = true) {

@@ -93,24 +93,24 @@ namespace KerbalWitchery {
 
         //[GameParameters.CustomStringParameterUI("title0", title = "#autoLOC_6002637", autoPersistance = false, lines = 2)]
         //public string title0 = "";
-        [GameParameters.CustomParameterUI("#autoLOC_900889", toolTip = "#KWLOC_agencyInfReq_toolTip")]
-        public bool agencyInfReq;
-        [GameParameters.CustomIntParameterUI("#KWLOC_infMin_title", minValue = -50, maxValue = 50, toolTip = "#KWLOC_infMin_toolTip")]
-        public int infMin;
-        [GameParameters.CustomIntParameterUI("#KWLOC_partInfThrs_title", toolTip = "#KWLOC_partInfThrs_toolTip")]
-        public int partInfThrs;
+        [GameParameters.CustomParameterUI("#KWLOC_partsReqSts_title", toolTip = "#KWLOC_partsReqSts_toolTip")]
+        public bool partsReqSts;
+        [GameParameters.CustomIntParameterUI("#KWLOC_minStAgency_title", minValue = -50, maxValue = 50, toolTip = "#KWLOC_minStAgency_toolTip")]
+        public int minStAgency;
+        [GameParameters.CustomIntParameterUI("#KWLOC_partStThrs_title", maxValue = 100000, stepSize = 1000, toolTip = "#KWLOC_partStThrs_toolTip")]
+        public int partStThrs;
 
         [GameParameters.CustomParameterUI("#KWLOC_takeoverBids_title", toolTip = "#KWLOC_takeoverBids_toolTip", newGameOnly = true)]
-        public bool takeoverBids;
-        [GameParameters.CustomParameterUI("#KWLOC_kscPrograms_title", toolTip = "#KWLOC_kscPrograms_toolTip", newGameOnly = true)]
-        public bool kscPrograms;
+        public bool takeoverBids = false;
+        //[GameParameters.CustomParameterUI("#KWLOC_kscPrograms_title", toolTip = "#KWLOC_kscPrograms_toolTip", newGameOnly = true)]
+        //public bool kscPrograms;
 
-        [GameParameters.CustomParameterUI("starting program", newGameOnly = true)]
-        public string startProg = Localizer.Format("#autoLOC_900432");
-        [GameParameters.CustomIntParameterUI("Program starting funds", newGameOnly = true, maxValue = 1000000, stepSize = 10000, toolTip = "")]
-        public int adminFunds;
-        [GameParameters.CustomFloatParameterUI("subsidy modifier", displayFormat = "F2", maxValue = 5f, toolTip = "")]
-        public float subsidyMod;
+        //[GameParameters.CustomParameterUI("starting program", newGameOnly = true)]
+        //public string startProg = Localizer.Format("#autoLOC_900432");
+        //[GameParameters.CustomIntParameterUI("Program starting funds", newGameOnly = true, maxValue = 1000000, stepSize = 10000, toolTip = "")]
+        //public int adminFunds;
+        //[GameParameters.CustomFloatParameterUI("subsidy modifier", displayFormat = "F2", maxValue = 5f, toolTip = "")]
+        //public float subsidyMod;
 
 
         //[GameParameters.CustomStringParameterUI("title1", title = "#KWLOC_lifeSupport", autoPersistance = false, lines = 2)]
@@ -119,17 +119,15 @@ namespace KerbalWitchery {
         //public bool air;
 
 
-        public override bool Enabled(MemberInfo member, GameParameters parameters) => false;
-
         public override bool Interactible(MemberInfo member, GameParameters parameters) {
             Dictionary<string, bool> interactReqs = new Dictionary<string, bool> {
-                [nameof(infMin)] = parameters.CustomParams<KWCareerOptions>().agencyInfReq,
-                [nameof(partInfThrs)] = parameters.CustomParams<KWCareerOptions>().agencyInfReq,
+                [nameof(minStAgency)] = parameters.CustomParams<KWCareerOptions>().partsReqSts,
+                [nameof(partStThrs)] = parameters.CustomParams<KWCareerOptions>().partsReqSts,
                 [nameof(takeoverBids)] = false,
-                [nameof(kscPrograms)] = false, // !parameters.CustomParams<KWCareerOptions>().takeoverBids
-                [nameof(startProg)] = parameters.CustomParams<KWCareerOptions>().kscPrograms,
-                [nameof(adminFunds)] = parameters.CustomParams<KWCareerOptions>().kscPrograms,
-                [nameof(subsidyMod)] = parameters.CustomParams<KWCareerOptions>().kscPrograms,
+                //[nameof(kscPrograms)] = false, // !parameters.CustomParams<KWCareerOptions>().takeoverBids
+                //[nameof(startProg)] = parameters.CustomParams<KWCareerOptions>().kscPrograms,
+                //[nameof(adminFunds)] = parameters.CustomParams<KWCareerOptions>().kscPrograms,
+                //[nameof(subsidyMod)] = parameters.CustomParams<KWCareerOptions>().kscPrograms,
             };
             if (interactReqs.Keys.Contains(member.Name))
                 return interactReqs[member.Name];
@@ -137,16 +135,16 @@ namespace KerbalWitchery {
         }
         
         public override void SetDifficultyPreset(GameParameters.Preset preset) {
-            adminFunds = (5 - (int)preset) * 50000;
-            subsidyMod = 3f - (int)preset;
-            agencyInfReq = preset > 0;
-            infMin = (int)preset * 10 - 30;
-            partInfThrs = (3 - (int)preset) * 10;
+            //adminFunds = (5 - (int)preset) * 50000;
+            //subsidyMod = 3f - (int)preset;
+            partsReqSts = preset > 0;
+            minStAgency = (int)preset * 10 - 30;
+            partStThrs = Mathf.Clamp((3 - (int)preset) * 10000, 1000, 30000);
         }
         
         public override IList ValidValues(MemberInfo member) {
-            if (member.Name == nameof(startProg)) return new string[4] { Localizer.Format("#autoLOC_900432"),
-                ProgType.PhysSci.Description(), ProgType.Pilots.Description(), ProgType.Robotics.Description() };
+            //if (member.Name == nameof(startProg)) return new string[4] { Localizer.Format("#autoLOC_900432"),
+            //    ProgType.PhysSci.Description(), ProgType.Pilots.Description(), ProgType.Robotics.Description() };
             return null;
         }
 

@@ -1,6 +1,7 @@
 ﻿
 using Contracts.Agents;
 using KSP.Localization;
+using KSP.UI.Screens;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -55,14 +56,17 @@ namespace KerbalWitchery {
             [KWUI.Mode.FRaise] = GameDatabase.Instance.GetTexture("Squad/Strategies/Icons/FundraisingCampaign", false),
             [KWUI.Mode.IPSell] = GameDatabase.Instance.GetTexture("Squad/Strategies/Icons/ResearchRightsSellOut", false),
             [KWUI.Mode.JunkBuy] = GameDatabase.Instance.GetTexture("Squad/PartList/SimpleIcons/R&D_node_icon_generic", false),
-            [KWUI.Mode.JunkSell] = GameDatabase.Instance.GetTexture("Squad/PartList/SimpleIcons/R&D_node_icon_specializedelectrics", false),
+            [KWUI.Mode.JunkSell] = GameDatabase.Instance.GetTexture("Squad/PartList/SimpleIcons/R&D_node_icon_robotics", false),
             [KWUI.Mode.Lead] = GameDatabase.Instance.GetTexture("Squad/Strategies/Icons/LeadershipInitiative", false),
             [KWUI.Mode.OpenSrc] = GameDatabase.Instance.GetTexture("Squad/Strategies/Icons/OpenSourceTechProgram", false),
             [KWUI.Mode.OutSrc] = GameDatabase.Instance.GetTexture("Squad/Strategies/Icons/OutsourcedResearch", false),
             [KWUI.Mode.PartBrs] = GameDatabase.Instance.GetTexture("Squad/PartList/SimpleIcons/inventory_part", false),
-            [KWUI.Mode.PartBuy] = GameDatabase.Instance.GetTexture("Squad/PartList/SimpleIcons/RDicon_fuelSystems-highPerformance", false),
+            [KWUI.Mode.PartBuy] = GameDatabase.Instance.GetTexture("Squad/PartList/SimpleIcons/cargo_part", false),
             [KWUI.Mode.Patents] = GameDatabase.Instance.GetTexture("Squad/Strategies/Icons/PatentsLicensing", false),
-            [KWUI.Mode.Interns] = GameDatabase.Instance.GetTexture("Squad/Strategies/Icons/UnpaidResearchProgram", false) };
+            [KWUI.Mode.Interns] = GameDatabase.Instance.GetTexture("Squad/Strategies/Icons/UnpaidResearchProgram", false),
+            [KWUI.Mode.PrsOrd] = GameDatabase.Instance.GetTexture("Squad/Contracts/Icons/report", false),
+            [KWUI.Mode.Train] = GameDatabase.Instance.GetTexture("Squad/Contracts/Icons/ksc", false)
+        };
         public static readonly Dictionary<SciType, Texture2D> sciIcons = new Dictionary<SciType, Texture2D> {
             [SciType.Misc] = GameDatabase.Instance.GetTexture("Squad/PartList/SimpleIcons/R&D_node_icon_nanolathing", false),
             [SciType.Milestones] = GameDatabase.Instance.GetTexture("Squad/PartList/SimpleIcons/R&D_node_icon_experimentalrocketry", false),
@@ -197,8 +201,25 @@ namespace KerbalWitchery {
             else return (input * KSPUtil.dateTimeFormatter.Day).ToString("N2");
         }
 
-        public static bool HeroExists() => HighLogic.CurrentGame.CrewRoster.Crew.Any(c => c.isHero && c.rosterStatus != ProtoCrewMember.RosterStatus.Dead &&
+        public static bool VesselRecoveryCheck(Vessel vessel) {
+            if (vessel.LandedInKSC) return true;
+            if (vessel.LandedInStockLaunchSite && vessel.Parts.Count == 1 && (vessel.isEVA || vessel.Parts[0].partInfo.name == "ScienceBox")) return true;
+            ScreenMessages.PostScreenMessage(Localizer.Format("#KWLOC_recoveryFailMsg"));
+            return false;
+        }
+        public static void UpdateEditorPartList() {
+            EditorPartListFilter<AvailablePart> stFilter = new EditorPartListFilter<AvailablePart>("AgencyStandings", p => KWAgencies.PartThresholdMet(p));
+            EditorPartList.Instance.ExcludeFilters.AddFilter(stFilter);
+            EditorPartList.Instance.Refresh();
+        }
+        public static ProtoCrewMember GetHero() => HighLogic.CurrentGame.CrewRoster.Crew.FirstOrDefault(c => c.isHero);
+        public static bool HeroReady() => HighLogic.CurrentGame.CrewRoster.Crew.Any(c => c.isHero && c.rosterStatus != ProtoCrewMember.RosterStatus.Dead &&
             (HighLogic.CurrentGame.Parameters.Difficulty.MissingCrewsRespawn || c.rosterStatus != ProtoCrewMember.RosterStatus.Missing));
+        public static void ToggleFacilityLock(bool locked) {
+            foreach (FieldInfo field in HighLogic.CurrentGame.Parameters.SpaceCenter.GetType().GetFields().Where(f => f.Name != "CanLeaveToMainMenu"))
+                field.SetValue(HighLogic.CurrentGame.Parameters.SpaceCenter, !locked);
+        }
+
     }
 
     public class Agency {
@@ -215,7 +236,7 @@ namespace KerbalWitchery {
             Leader = "#KWLOC_aiControlled";
             strats = new Dictionary<KWUI.Mode, bool>();
             Sci = PSystemManager.Instance.localBodies.ToDictionary(b => b.name, b => Enum.GetValues(typeof(SciType)).Cast<SciType>().ToDictionary(s => s, s => 0f));
-            Labs = KWAgencies.Labs(this).ToDictionary(p => p, p => false) ?? new Dictionary<SciType, bool>();
+            Labs = KWAgencies.Labs(this).ToDictionary(p => p, p => true) ?? new Dictionary<SciType, bool>();
             parts = new Dictionary<string, int>();
             Value = PartLoader.LoadedPartsList.Where(p => p.manufacturer == Agent().Title).Select(p => p.entryCost).Sum() + 
                 KWAgencies.LabCosts().Where(l => Labs.ContainsKey(l.Key)).Select(l => l.Value).Sum();
@@ -259,7 +280,7 @@ namespace KerbalWitchery {
             parts.ToList().ForEach(p => pNode.AddValue(p.Key, p.Value));
         }
         public Agent Agent() => AgentList.Instance.GetAgent(Name);
-        public void SetPlayer() => Leader = "#autoLOC_8001049";
+        public void SetPlayer() => Leader = KWUtil.GetHero().displayName; // "#autoLOC_8001049";
         public void UnsetPlayer() => Leader = "#KWLOC_aiControlled";
         public void AddValue(double amount) => Value += amount;
         public void SetValue(double amount) => Value = amount;
