@@ -139,7 +139,7 @@ namespace KerbalWitchery {
             //subsidyMod = 3f - (int)preset;
             partsReqSts = preset > 0;
             minStAgency = (int)preset * 10 - 30;
-            partStThrs = Mathf.Clamp((3 - (int)preset) * 10000, 1000, 30000);
+            partStThrs = 5000 * (int)Math.Pow(2, 3 - (int)preset); // Mathf.Clamp((3 - (int)preset) * 10000, 5000, 30000);
         }
         
         public override IList ValidValues(MemberInfo member) {

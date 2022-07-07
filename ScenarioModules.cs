@@ -21,7 +21,7 @@ using UnityEngine.Events;
 namespace KerbalWitchery {
     // ScenarioCreationOptions.AddToNewCareerGames | ScenarioCreationOptions.AddToExistingCareerGames
     [KSPScenario(ScenarioCreationOptions.None, new GameScenes[1] { GameScenes.SPACECENTER })]
-    public class KWCareer : ScenarioModule {
+    public class KWAdmin : ScenarioModule {
         
         private static readonly Dictionary<ProgType, string[]> goals = GameDatabase.Instance.GetConfigNode("KerbalWitchery/KWAdminPrograms").GetNodes().ToDictionary(n =>
             (ProgType)Enum.Parse(typeof(ProgType), n.name), n => n.GetValues().ToArray());
@@ -37,11 +37,9 @@ namespace KerbalWitchery {
         }
         public override void OnLoad(ConfigNode node) {
             // programs = node.HasNode("PROGRAM") ? node.GetNodes("PROGRAM").Select(n => new Program(n)).ToList() : goals.Keys.Select(t => new Program(t)).ToList();
-            hero = node.GetValue("hero");
 
         }
         public override void OnSave(ConfigNode node) {
-            node.AddValue("hero", hero);
 
             // programs.ForEach(p => p.Save(node));
 
@@ -178,12 +176,20 @@ namespace KerbalWitchery {
             Player().SetRep(Reputation.CurrentRep);
             Player().SetValue(Funding.Instance.Funds);
         }
+        public static void ResetPlayer() {
+            Player().UnsetPlayer();
+            Funding.Instance.SetFunds(HighLogic.CurrentGame.Parameters.Career.StartingFunds, TransactionReasons.None);
+            Reputation.Instance.SetReputation(HighLogic.CurrentGame.Parameters.Career.StartingReputation, TransactionReasons.None);
+            ResearchAndDevelopment.Instance.SetScience(HighLogic.CurrentGame.Parameters.Career.StartingScience, TransactionReasons.None);
+            foreach (Vessel vessel in FlightGlobals.Vessels.Where(v => (int)v.vesselType > 2)) vessel.DestroyVesselComponents();
+        }
         public static void Takeover(Agency agency) {
             HighLogic.CurrentGame.flagURL = agency.Agent().LogoURL;
-
+            KWUtil.GetHero().type = ProtoCrewMember.KerbalType.Crew;
             if (NewPlayer()) {
                 agency.SetPlayer();
                 UpdatePlayerCurrencies();
+                KWUtil.ToggleFacilityLock(false);
                 // KWUtil.UnlockTech("Administration");
                 // KWUtil.UpgradeFacility(SpaceCenterFacility.Administration);
             } else {
@@ -214,7 +220,7 @@ namespace KerbalWitchery {
             Agency agency = GetManufacturer(part);
             if (agency == null) return true;
             if (GetStanding(agency) < KWUtil.CareerOpts().minStAgency) return false;
-            return Mathf.Max(GetStanding(agency) * 1000, KWUtil.CareerOpts().partStThrs) >= part.entryCost;
+            return Mathf.Max(GetStanding(agency) * 10000, KWUtil.CareerOpts().partStThrs) >= part.entryCost;
         }
         public static int PricePart(AvailablePart part) => PlayerIsAgency(GetManufacturer(part)) ? (int)Math.Round(part.entryCost * 0.666) : part.entryCost;
         public static void OrderPart(AvailablePart part, bool store = true) {

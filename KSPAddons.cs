@@ -60,7 +60,6 @@ namespace KerbalWitchery {
                 // if (KWUtil.KSCScene()) {
                     GameEvents.Contract.onCancelled.Add(CancelContract);
                     GameEvents.Contract.onDeclined.Add(DeclineContract);
-                    GameEvents.OnCrewmemberSacked.Add(SackCrew);
                     // GameEvents.onLevelWasLoaded.Add(LoadLevel);
                     // GameEvents.OnTechnologyResearched.Add(ResearchTech);
                     //GameEvents.onFacilityContextMenuSpawn.Add(SpawnFacilityMenu);
@@ -85,7 +84,7 @@ namespace KerbalWitchery {
                     GameEvents.OnVesselRecoveryRequested.Add(RecoverVessel);
                     
                 // }
-                // GameEvents.Modifiers.OnCurrencyModified.Add(ModifyCurrency);
+                GameEvents.Modifiers.OnCurrencyModified.Add(ModifyCurrency);
                 GameEvents.OnFundsChanged.Add(ChangeFunds);
                 GameEvents.OnReputationChanged.Add(ChangeRep);
             }
@@ -107,7 +106,6 @@ namespace KerbalWitchery {
                 // if (KWUtil.KSCScene()) {
                     GameEvents.Contract.onCancelled.Remove(CancelContract);
                     GameEvents.Contract.onDeclined.Remove(DeclineContract);
-                    GameEvents.OnCrewmemberSacked.Remove(SackCrew);
                     // GameEvents.onLevelWasLoaded.Remove(LoadLevel);
                     // GameEvents.OnTechnologyResearched.Remove(ResearchTech);
                     //GameEvents.onFacilityContextMenuSpawn.Remove(SpawnFacilityMenu);
@@ -133,7 +131,7 @@ namespace KerbalWitchery {
                     GameEvents.OnVesselRecoveryRequested.Remove(RecoverVessel);
                 // }
 
-                // GameEvents.Modifiers.OnCurrencyModified.Remove(ModifyCurrency);
+                GameEvents.Modifiers.OnCurrencyModified.Remove(ModifyCurrency);
                 GameEvents.OnFundsChanged.Remove(ChangeFunds);
                 GameEvents.OnReputationChanged.Remove(ChangeRep);
 
@@ -156,7 +154,8 @@ namespace KerbalWitchery {
         //        KWUI.GameOverPopup();
         //}
 
-        private void SackCrew(ProtoCrewMember crew, int _) { if (crew.isHero) HighLogic.CurrentGame.CrewRoster.Remove(crew); }
+        
+        
         private void DeployExperiment(ScienceData data) {
             if (HighLogic.LoadedSceneIsFlight)
                 if (FlightGlobals.ActiveVessel.isEVA && KWUtil.evaKitConsumerIDs.Contains(data.subjectID.Split('@')[0]))
@@ -257,7 +256,6 @@ namespace KerbalWitchery {
             //HighLogic.CurrentGame.CrewRoster.AddCrewMember(new ProtoCrewMember(ProtoCrewMember.KerbalType.Crew, kOpts.name) {
             //    gender = (ProtoCrewMember.Gender)kOpts.genders.IndexOf(kOpts.gender), courage = kOpts.courage, stupidity = kOpts.stupidity, isBadass = kOpts.badS,
             //    rosterStatus = ProtoCrewMember.RosterStatus.Available, trait = KerbalRoster.touristTrait });
-
             while (HighLogic.CurrentGame.CrewRoster.Count > 0)
                 HighLogic.CurrentGame.CrewRoster.Remove(0);
             //if (!KWUtil.CareerOpts().takeoverBids)
@@ -271,7 +269,10 @@ namespace KerbalWitchery {
         //    }
         //}
 
-        private void ModifyCurrency(CurrencyModifierQuery query) { }
+        private void ModifyCurrency(CurrencyModifierQuery query) {
+            
+
+        }
         private void ChangeFunds(double _, TransactionReasons __) {
             KWAgencies.UpdatePlayerCurrencies();
             if (KWUtil.EditorScene()) KWUtil.UpdateEditorPartList();
@@ -312,14 +313,15 @@ namespace KerbalWitchery {
             //else if (id.Contains("Sample")) type = SciType.Samples;
             //else if (id.StartsWith("deployed")) type = SciType.Deployed;
             //else if (id == "crewReport" || id.StartsWith("eva")) type = SciType.Crew;
-            //else if (id == "mysteryGoo" || id == "mobileMaterialsLab") type = SciType.Materials;
-            //else if (id.StartsWith("ROCScience") || id == "atmosphereAnalysis" || id == "infraredTelescope") type = SciType.Scans;
-            //else if (id == "temperatureScan" || id == "barometerScan" || id == "seismicScan" || id == "gravityScan" || id == "magnetometer") type = SciType.Sensors;
+            //else if ("mysteryGoo|mobileMaterialsLab".Contains(id)) type = SciType.Materials;
+            //else if (id.StartsWith("ROCScience") || "atmosphereAnalysis|infraredTelescope".Contains(id)) type = SciType.Scans;
+            //else if ("temperatureScan|barometerScan|seismicScan|gravityScan|magnetometer".Contains(id)) type = SciType.Sensors;
             //if (body != null && type != SciType.Misc) KWAgencies.Player().AddSci(body, type, amount);
         }
 
         private void RolloutVessel(ShipConstruct ship) {
             // KWUtil.CareerOpts().adminFunds += (int)Math.Round(ship.GetShipCosts(out float d, out float f) * 0.5f * (KWUtil.CareerOpts().subsidyMod + 1f));
+            HighLogic.CurrentGame.Parameters.CustomParams<GameParameters.AdvancedParams>().AllowNegativeCurrency = true;
             foreach (AvailablePart part in ship.Parts.Select(p => p.partInfo)) {
                 if (!KWAgencies.Player().RequestPart(part)) KWAgencies.OrderPart(part, false);
                 KWAgencies.TryPayAgency(KWAgencies.GetManufacturer(part), part.cost * 0.5f);
@@ -328,7 +330,7 @@ namespace KerbalWitchery {
         }
         
         private void RecoverVessel(Vessel vessel) {
-            if (vessel.GetVesselCrew().Contains(KWUtil.GetHero()))
+            if (vessel.GetVesselCrew().Select(c => c.name).Contains(KWUtil.GetHero().name))
                 KWUtil.GetHero().courage = Mathf.Clamp(KWUtil.GetHero().experience * 0.01f, 0f, 1f);
             foreach (AvailablePart part in vessel.Parts.Select(p => p.partInfo)) // .Where(p => !p.partInfo.name.Contains("kerbalEVA"))
                 KWAgencies.Player().StorePart(part);
@@ -396,9 +398,12 @@ namespace KerbalWitchery {
                 GameEvents.onGUIApplicationLauncherDestroyed.Add(RemoveAppBtn);
                 // if (KWUtil.KSCScene()) {
                     RDNode.OnNodeSelected.Add(SelectRDNode);
-                    // GameEvents.onGUIAdministrationFacilitySpawn.Add(SpawnAdmin);
-                    // GameEvents.onGUIAdministrationFacilityDespawn.Add(DespawnAdmin);
-                    GameEvents.onGUIRnDComplexSpawn.Add(SpawnRnD);
+
+                GameEvents.OnCrewmemberSacked.Add(SackCrew);
+                GameEvents.OnTechnologyResearched.Add(ResearchTech);
+                // GameEvents.onGUIAdministrationFacilitySpawn.Add(SpawnAdmin);
+                // GameEvents.onGUIAdministrationFacilityDespawn.Add(DespawnAdmin);
+                GameEvents.onGUIRnDComplexSpawn.Add(SpawnRnD);
                     GameEvents.onGUIRnDComplexDespawn.Add(DespawnRnD);
                 //GameEvents.onGUIAstronautComplexSpawn.Add(SpawnAC);
                 //GameEvents.onGUIAstronautComplexDespawn.Add(DespawnAC);
@@ -450,9 +455,11 @@ namespace KerbalWitchery {
                 RemoveAppBtn();
                 // if (KWUtil.KSCScene()) {
                     RDNode.OnNodeSelected.Remove(SelectRDNode);
-                    // GameEvents.onGUIAdministrationFacilitySpawn.Remove(SpawnAdmin);
-                    // GameEvents.onGUIAdministrationFacilityDespawn.Remove(DespawnAdmin);
-                    GameEvents.onGUIRnDComplexSpawn.Remove(SpawnRnD);
+                GameEvents.OnCrewmemberSacked.Remove(SackCrew);
+                GameEvents.OnTechnologyResearched.Remove(ResearchTech);
+                // GameEvents.onGUIAdministrationFacilitySpawn.Remove(SpawnAdmin);
+                // GameEvents.onGUIAdministrationFacilityDespawn.Remove(DespawnAdmin);
+                GameEvents.onGUIRnDComplexSpawn.Remove(SpawnRnD);
                     GameEvents.onGUIRnDComplexDespawn.Remove(DespawnRnD);
                     //GameEvents.onGUIAstronautComplexSpawn.Remove(SpawnAC);
                     //GameEvents.onGUIAstronautComplexDespawn.Remove(DespawnAC);
@@ -518,7 +525,7 @@ namespace KerbalWitchery {
         private void DespawnRnD() { KWUtil.UnlockParts(); inRnD = false; }
         // private void SpawnAC() { inAC = true; }
         // private void DespawnAC() { inAC = false; }
-
+        private void SackCrew(ProtoCrewMember crew, int _) { if (crew.isHero) { KWAgencies.ResetPlayer(); appBtn.SetTexture(KWUtil.uiIcons[Mode.Lead]); } }
         private void CreatePAW(Part part) {
 
             //if (editorScene && part.Modules.Contains<ModuleKWPressurisedCabin>()) {
@@ -568,6 +575,8 @@ namespace KerbalWitchery {
 
             if (part.Modules.Contains<ModuleKWResourceToggle>())
                 StartCoroutine(CallbackUtil.DelayedCallback(1, delegate { part.FindModuleImplementing<ModuleKWResourceToggle>().UpdateUI(); }));
+            //if (part.Modules.Contains<ModuleKWNonCryoContainer>())
+            //    StartCoroutine(CallbackUtil.DelayedCallback(1, delegate { part.FindModuleImplementing<ModuleKWNonCryoContainer>().UpdateUI(); }));
 
             //if (part.Modules.Contains<ModuleKWIgnitors>())
             //    part.FindModuleImplementing<ModuleKWIgnitors>().UpdateUI();
@@ -581,10 +590,9 @@ namespace KerbalWitchery {
                 
             }
         }
-        private void SelectRDNode(RDNode node) {
-            if (node.state == RDNode.State.RESEARCHED)
-                StartCoroutine(CallbackUtil.DelayedCallback(1, delegate { node.controller.actionButton.gameObject.SetActive(false); }));
-        }
+        private void SelectRDNode(RDNode node) { if (node.state == RDNode.State.RESEARCHED) HidePartPurchBtn(); }
+        private void ResearchTech(GameEvents.HostTargetAction<RDTech, RDTech.OperationResult> action) { if (action.target == RDTech.OperationResult.Successful) HidePartPurchBtn(); }
+        private void HidePartPurchBtn() => StartCoroutine(CallbackUtil.DelayedCallback(1, delegate { RDController.Instance.actionButton.gameObject.SetActive(false); }));
         private void SpawnFacilityMenu(KSCFacilityContextMenu menu) {
             SpaceCenterFacility facility = Enum.GetValues(typeof(SpaceCenterFacility)).Cast<SpaceCenterFacility>().FirstOrDefault(f => f.Description() ==
                 (string)menu.GetType().GetField("facilityName", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(menu));
@@ -645,7 +653,7 @@ namespace KerbalWitchery {
                 appBtn = ApplicationLauncher.Instance.AddModApplication(delegate { LaunchApp(); }, delegate { LaunchApp(); }, null, null, null, null,
                     ApplicationLauncher.AppScenes.SPACECENTER | ApplicationLauncher.AppScenes.FLIGHT | ApplicationLauncher.AppScenes.VAB | ApplicationLauncher.AppScenes.SPH |
                     ApplicationLauncher.AppScenes.MAPVIEW | ApplicationLauncher.AppScenes.TRACKSTATION,
-                    !KWUtil.HeroReady() ? KWUtil.adminIcons[ProgType.LifeSci] : (KWAgencies.Player()?.Agent().Logo ?? KWUtil.uiIcons[Mode.Take]));
+                    !KWUtil.HeroReady() ? KWUtil.adminIcons[ProgType.LifeSci] : (KWAgencies.Player()?.Agent().Logo ?? KWUtil.uiIcons[Mode.Lead]));
             }
             //if (HighLogic.LoadedSceneIsEditor && ApplicationLauncher.Ready && editorBtn == null) {
             //    editorBtn = ApplicationLauncher.Instance.AddModApplication(delegate { EditorPopup(); }, delegate { EditorPopup(); }, null, null, null, null,
@@ -656,8 +664,11 @@ namespace KerbalWitchery {
             if (appBtn != null) { ApplicationLauncher.Instance.RemoveModApplication(appBtn); appBtn = null; }
             // if (editorBtn != null) { ApplicationLauncher.Instance.RemoveModApplication(editorBtn); editorBtn = null; }
         }
-        private void LaunchApp() { if (!KWUtil.HeroReady()) HeroPopup(); else Popup(mode: KWUtil.EditorScene() ? Mode.PrsOrd : Mode.Main); }
-        private void HeroPopup(string name = null, ProtoCrewMember.Gender gend = ProtoCrewMember.Gender.Female) {
+        private void LaunchApp() {
+            if (!KWUtil.HeroReady()) HeroPopup((ProtoCrewMember.Gender)UnityEngine.Random.Range(0, 2));
+            else Popup(mode: KWUtil.EditorScene() ? Mode.PrsOrd : Mode.Main);
+        }
+        private void HeroPopup(ProtoCrewMember.Gender gend = ProtoCrewMember.Gender.Female, string name = null) {
             if (name == null) name = CrewGenerator.GetRandomName(gend).Replace(" " + CrewGenerator.GetLastName(), "");
             PopupDialog.SpawnPopupDialog(
             new MultiOptionDialog("KWHeroPopup", "", Localizer.Format("#autoLOC_900441"), HighLogic.UISkin, new Rect(0.5f, 0.5f, 300, 1),
@@ -668,24 +679,27 @@ namespace KerbalWitchery {
                         new DialogGUITextInput(name, false, 15,
                             (string n) => { name = n; return n; }, 80, 32),
                         new DialogGUIBox(CrewGenerator.GetLastName(), 65, 32),
-                        new DialogGUIButton(Localizer.Format("#autoLOC_900432"), delegate { HeroPopup(null, gend); }, 65, 32, true)),
+                        new DialogGUIButton(Localizer.Format("#autoLOC_900432"), delegate { HeroPopup((ProtoCrewMember.Gender)UnityEngine.Random.Range(0, 2)); }, 65, 32, true)),
                     new DialogGUIBox("", 290, 3),
                     new DialogGUIHorizontalLayout(
                         new DialogGUIBox(Localizer.Format("#autoLOC_900447") + ":", 65, 32),
                         new DialogGUIToggleButton(gend == ProtoCrewMember.Gender.Female, Localizer.Format("#autoLOC_900444"),
-                            delegate { PopupDialog.DismissPopup("KWHeroPopup"); HeroPopup(name, ProtoCrewMember.Gender.Female); }, 108, 32),
+                            delegate { PopupDialog.DismissPopup("KWHeroPopup"); HeroPopup(); }, 108, 32),
                         new DialogGUIToggleButton(gend == ProtoCrewMember.Gender.Male, Localizer.Format("#autoLOC_900434"),
-                            delegate { PopupDialog.DismissPopup("KWHeroPopup"); HeroPopup(name, ProtoCrewMember.Gender.Male); }, 107, 32)),
+                            delegate { PopupDialog.DismissPopup("KWHeroPopup"); HeroPopup(ProtoCrewMember.Gender.Male); }, 107, 32)),
                     new DialogGUIBox("", 290, 3),
                     new DialogGUIButton(Localizer.Format("#autoLOC_900341"), delegate {
-                        ProtoCrewMember hero = new ProtoCrewMember(ProtoCrewMember.KerbalType.Crew, $"{name} {CrewGenerator.GetLastName()}") {
-                            gender = gend, stupidity = 1f, rosterStatus = ProtoCrewMember.RosterStatus.Available, trait = KerbalRoster.pilotTrait };
+                        ProtoCrewMember hero = new ProtoCrewMember(ProtoCrewMember.KerbalType.Applicant, $"{name} {CrewGenerator.GetLastName()}") {
+                            gender = gend, stupidity = 1f, trait = KerbalRoster.touristTrait };
                         hero.GetType().GetProperty("isHero").SetMethod.Invoke(hero, new object[] { true });
                         if (HighLogic.CurrentGame.CrewRoster.AddCrewMember(hero)) {
-                            if (!KWUtil.CareerOpts().takeoverBids && KWAgencies.NewPlayer())
-                                KWAgencies.Takeover(KWAgencies.AList.Find(a => a.Name == "Research & Development Department"));
-                            appBtn.SetTexture(KWAgencies.Player().Agent().Logo);
-                            KWUtil.ToggleFacilityLock(false);
+                            // if (!KWUtil.CareerOpts().takeoverBids && KWAgencies.NewPlayer())
+                                // KWAgencies.Takeover(KWAgencies.AList.Find(a => a.Name == "Research & Development Department"));
+                            appBtn.SetTexture(KWUtil.uiIcons[Mode.Lead]);
+                            //Funding.Instance.SetFunds(HighLogic.CurrentGame.Parameters.Career.StartingFunds, TransactionReasons.None);
+                            //Reputation.Instance.SetReputation(HighLogic.CurrentGame.Parameters.Career.StartingReputation, TransactionReasons.None);
+                            //ResearchAndDevelopment.Instance.SetScience(HighLogic.CurrentGame.Parameters.Career.StartingScience, TransactionReasons.None);
+                            // KWUtil.ToggleFacilityLock(false);
                         } else ScreenMessages.PostScreenMessage(Localizer.Format("#autoLOC_8002103", $"{name} {CrewGenerator.GetLastName()}"));
                     }, 290, 32, true) }), false, HighLogic.UISkin);
         }
@@ -698,14 +712,14 @@ namespace KerbalWitchery {
         }
         private DialogGUIHorizontalLayout NavBar(Agency agency, Mode mode) { // , ListMode lMode = ListMode.All
             List<DialogGUIBase> bar = new List<DialogGUIBase>();
-            bool navActive = (Mode.Main | Mode.Desc | Mode.PartBrs | Mode.OutSrc | Mode.Take | Mode.Negs).HasFlag(mode);
+            bool navActive = (Mode.Main | Mode.Desc | Mode.PartBrs | Mode.OutSrc | Mode.Lead | Mode.Negs).HasFlag(mode);
             bool isPlayer = KWAgencies.PlayerIsAgency(agency);
             if (navActive) {
                 //List<Agency> aList = PartLoader.LoadedPartsList.Where(p => ResearchAndDevelopment.PartTechAvailable(p)).Select(p =>
                 //    KWAgencies.GetAgency(AgentList.Instance.GetAgentbyTitle(p.manufacturer))).Append(KWAgencies.Player()).Append(KWAgencies.Junkyard()).Distinct().OrderBy(a => a.Name).ToList();
                 List<Agency> aList = KWAgencies.AList.Where(a => (Mode.Main | Mode.Desc).HasFlag(mode) || a.Name == agency.Name ||
                     (mode == Mode.PartBrs && KWAgencies.GetAvailableParts(a).Count > 0) ||
-                    (mode == Mode.Take && Funding.Instance.Funds >= a.Value) ||
+                    (mode == Mode.Lead && Funding.Instance.Funds >= a.Value) ||
                     (mode == Mode.Negs && !KWAgencies.PlayerIsAgency(a)) ||
                     (mode == Mode.OutSrc && a.Labs.Count > 0 && !KWAgencies.PlayerIsAgency(a))).ToList();
                 int i = aList.FindIndex(a => a.Name == agency.Name);
@@ -714,14 +728,14 @@ namespace KerbalWitchery {
                     new DialogGUIButton(">>", delegate { Popup(aList[i + 1 < aList.Count ? i + 1 : 0], mode); }, 32, 32, true) });
                 if ((mode == Mode.Main && !KWAgencies.NewPlayer()) || (mode == Mode.Desc && isPlayer)) // bar.Insert(1, new DialogGUIBox("mode selector", 256, 32));
                     bar.Insert(1, new DialogGUIBox(Localizer.Format("#KWLOC_agenciesBrowser"), 256, 32)); } // #autoLOC_6001393
-            if ((Mode.Desc | Mode.Take).HasFlag(mode) || KWAgencies.NewPlayer()) {
+            if ((Mode.Desc | Mode.Lead).HasFlag(mode) || KWAgencies.NewPlayer()) {
                 //if (!navActive) bar.Add(new DialogGUIImage(new Vector2(32, 32), new Vector2(0, 0), Color.white, KWUtil.uiIcons[Mode.Lead]));
                 if (agency != KWAgencies.Player())
                     bar.InsertRange(1, new DialogGUIBase[] {
-                        new DialogGUIImage(new Vector2(32, 32), new Vector2(0, 0), Color.white, KWUtil.uiIcons[Mode.Take]),
-                        new DialogGUIToggleButton(mode == Mode.Take, Localizer.Format(Mode.Take.Description()),
-                            delegate { Dismiss(); Popup(agency, mode != Mode.Take ? Mode.Take : Mode.Desc); }, 184, 32), // 257, 221, 
-                        new DialogGUIImage(new Vector2(32, 32), new Vector2(0, 0), Color.white, KWUtil.uiIcons[Mode.Take]) });
+                        new DialogGUIImage(new Vector2(32, 32), new Vector2(0, 0), Color.white, KWUtil.uiIcons[Mode.Lead]),
+                        new DialogGUIToggleButton(mode == Mode.Lead, Localizer.Format(Mode.Lead.Description()),
+                            delegate { Dismiss(); Popup(agency, mode != Mode.Lead ? Mode.Lead : Mode.Desc); }, 184, 32), // 257, 221, 
+                        new DialogGUIImage(new Vector2(32, 32), new Vector2(0, 0), Color.white, KWUtil.uiIcons[Mode.Lead]) });
             } else if ((Mode.Negs | Mode.FRaise | Mode.Interns).HasFlag(mode))
                 bar.InsertRange(bar.Count > 1 ? 1 : 0, new DialogGUIBase[] {
                     new DialogGUIImage(new Vector2(32, 32), new Vector2(0, 0), Color.white, KWUtil.uiIcons[mode]),
@@ -776,19 +790,19 @@ namespace KerbalWitchery {
                             delegate { Popup(agency, mode == Mode.Main ? Mode.OutSrc : Mode.Main); }, 229, 32),
                         new DialogGUIImage(new Vector2(32, 32), new Vector2(0, 0), Color.white, KWUtil.uiIcons[Mode.OutSrc])));
                     if (isPlayer || mode == Mode.OutSrc) {
-                        box.Add(new DialogGUIHorizontalLayout(
-                            new DialogGUIImage(new Vector2(32, 32), new Vector2(0, 0), Color.white, KWUtil.uiIcons[Mode.OpenSrc]),
-                            new DialogGUIButton(Localizer.Format(Mode.OpenSrc.Description()), delegate { Popup(agency, Mode.OpenSrc); }, 229, 32, true),
-                            new DialogGUIImage(new Vector2(32, 32), new Vector2(0, 0), Color.white, KWUtil.uiIcons[Mode.OpenSrc])));
-                        box.Add(new DialogGUIHorizontalLayout(
-                            new DialogGUIImage(new Vector2(32, 32), new Vector2(0, 0), Color.white, KWUtil.uiIcons[Mode.Patents]),
-                            new DialogGUIButton(Localizer.Format(Mode.Patents.Description()), delegate { Popup(agency, Mode.Patents); }, 229, 32, true),
-                            new DialogGUIImage(new Vector2(32, 32), new Vector2(0, 0), Color.white, KWUtil.uiIcons[Mode.Patents]))); }}}
+                        box.Add(ModeNavBtn(agency, Mode.OpenSrc));
+                        box.Add(ModeNavBtn(agency, Mode.Patents));
+                        //box.Add(new DialogGUIHorizontalLayout(
+                        //    new DialogGUIImage(new Vector2(32, 32), new Vector2(0, 0), Color.white, KWUtil.uiIcons[Mode.OpenSrc]),
+                        //    new DialogGUIButton(Localizer.Format(Mode.OpenSrc.Description()), delegate { Popup(agency, Mode.OpenSrc); }, 229, 32, true),
+                        //    new DialogGUIImage(new Vector2(32, 32), new Vector2(0, 0), Color.white, KWUtil.uiIcons[Mode.OpenSrc])));
+                        //box.Add(new DialogGUIHorizontalLayout(
+                        //    new DialogGUIImage(new Vector2(32, 32), new Vector2(0, 0), Color.white, KWUtil.uiIcons[Mode.Patents]),
+                        //    new DialogGUIButton(Localizer.Format(Mode.Patents.Description()), delegate { Popup(agency, Mode.Patents); }, 229, 32, true),
+                        //    new DialogGUIImage(new Vector2(32, 32), new Vector2(0, 0), Color.white, KWUtil.uiIcons[Mode.Patents])));
+                        }}}
             if (mode == Mode.Main) {
-                box.Add(new DialogGUIHorizontalLayout(
-                    new DialogGUIImage(new Vector2(32, 32), new Vector2(0, 0), Color.white, isPlayer ? KWUtil.uiIcons[Mode.PartBrs] : KWUtil.uiIcons[Mode.PartBuy]),
-                    new DialogGUIButton(Localizer.Format(isPlayer ? "#KWLOC_partsStorage" : "#KWLOC_partsCatalogue"), delegate { Popup(agency, Mode.PartBrs); }, 229, 32, true),
-                    new DialogGUIImage(new Vector2(32, 32), new Vector2(0, 0), Color.white, isPlayer ? KWUtil.uiIcons[Mode.PartBrs] : KWUtil.uiIcons[Mode.PartBuy])));
+
                 // box.Add(new DialogGUIBox("", 303, 32));
                 //if (!KWAgencies.NewPlayer()) 
                 //    box.Add(new DialogGUIHorizontalLayout(KWAdmin.GetLobbyProgs(agency).Select(p => 
@@ -797,13 +811,21 @@ namespace KerbalWitchery {
                 //        new DialogGUIHorizontalLayout(
                 //            new DialogGUIImage(new Vector2(32, 32), new Vector2(0, 0), Color.white, KWUtil.adminIcons[p]),
                 //            new DialogGUIBox(Localizer.Format(p.Description()), 266, 32))).ToArray());
+                if (!KWAgencies.NewPlayer())
+                    box.Add(new DialogGUIHorizontalLayout(
+                        new DialogGUIImage(new Vector2(32, 32), new Vector2(0, 0), Color.white, isPlayer ? KWUtil.uiIcons[Mode.PartBrs] : KWUtil.uiIcons[Mode.PartBuy]),
+                        new DialogGUIButton(Localizer.Format(isPlayer ? "#KWLOC_partsStorage" : "#KWLOC_partsCatalogue"), delegate { Popup(agency, Mode.PartBrs); }, 229, 32, true),
+                        new DialogGUIImage(new Vector2(32, 32), new Vector2(0, 0), Color.white, isPlayer ? KWUtil.uiIcons[Mode.PartBrs] : KWUtil.uiIcons[Mode.PartBuy])));
                 if (isPlayer) {
                     if (KWUtil.EditorScene())
                         box.Add(ModeNavBtn(agency, Mode.PrsOrd));
                     // box.Add(ModeNavBtn(agency, Mode.IPSell));
-                    if (KWAgencies.IsRnD(agency) && KWUtil.GetHero().rosterStatus == ProtoCrewMember.RosterStatus.Available)
-                        box.Add(ModeNavBtn(agency, Mode.Train));
-
+                    if (KWAgencies.IsRnD(agency)) {
+                        if (KWUtil.GetHero().rosterStatus == ProtoCrewMember.RosterStatus.Available)
+                            box.Add(ModeNavBtn(agency, Mode.Train));
+                        if (Funding.Instance.Funds < 0)
+                            box.Add(ModeNavBtn(agency, Mode.Bail));
+                    }
                     //if (!KWAgencies.PlayerIsRnD())
                     //    box.Add(new DialogGUIHorizontalLayout(
                     //        new DialogGUIImage(new Vector2(32, 32), new Vector2(0, 0), Color.white, KWUtil.uiIcons[Mode.FRaise]),
@@ -819,11 +841,6 @@ namespace KerbalWitchery {
                     //                delegate { agency.ToggleStrat(Mode.Interns); }, 193, 32),
                     //            new DialogGUIButton("?", delegate { Popup(agency, Mode.Interns); }, 32, 32, true),
                     //            new DialogGUIImage(new Vector2(32, 32), new Vector2(0, 0), Color.white, KWUtil.uiIcons[Mode.Interns])));
-                    //    if (Funding.Instance.Funds < 0)
-                    //        box.Add(new DialogGUIHorizontalLayout(
-                    //            new DialogGUIImage(new Vector2(32, 32), new Vector2(0, 0), Color.white, KWUtil.uiIcons[Mode.Bail]),
-                    //            new DialogGUIButton(Localizer.Format(Mode.Bail.Description()), delegate { Popup(agency, Mode.Bail); }, 229, 32, true),
-                    //            new DialogGUIImage(new Vector2(32, 32), new Vector2(0, 0), Color.white, KWUtil.uiIcons[Mode.Bail])));
                     //}
                 } else if (!KWAgencies.NewPlayer()) {
                     //box.Add(new DialogGUIHorizontalLayout(
@@ -883,7 +900,15 @@ namespace KerbalWitchery {
                 box.Add(new DialogGUIBox($"<color=#D4F4FD>{Localizer.Format("#autoLOC_501153")}</color>", 303, 140));
             } else if (mode == Mode.OpenSrc) {
                 box.Add(new DialogGUIBox($"<color=#D4F4FD>{Localizer.Format("#autoLOC_501155")}</color>", 303, 140));
-
+                foreach (var pair1 in KWAgencies.Player().Sci.Where(p1 => p1.Value.Any(p2 => p2.Value != 0f))) {
+                    box.Add(new DialogGUIBox(pair1.Key, 303, 32));
+                    foreach (var pair2 in pair1.Value.Where(p => p.Value != 0))
+                        box.Add(new DialogGUIHorizontalLayout(
+                            new DialogGUIImage(new Vector2(32, 32), new Vector2(0, 0), Color.white, KWUtil.sciIcons[pair2.Key]),
+                            new DialogGUIBox($"{pair2.Value:N1}", 32, 32),
+                            new DialogGUIButton("25%", delegate { }, 32, 32, true),
+                            new DialogGUIButton("50%", delegate { }, 32, 32, true),
+                            new DialogGUIButton("100%", delegate { }, 32, 32, true))); }
             } else if (mode == Mode.Patents) {
                 box.Add(new DialogGUIBox($"<color=#D4F4FD>{Localizer.Format("#autoLOC_501161")}</color>", 303, 140));
 
@@ -902,12 +927,12 @@ namespace KerbalWitchery {
             } else if (mode == Mode.Interns) {
                 box.Add(new DialogGUIBox($"<color=#D4F4FD>{Localizer.Format("#autoLOC_501157")}</color>", 303, 100));
 
-            } else if (mode == Mode.Take) {
+            } else if (mode == Mode.Lead) {
                 // $"{(Funding.Instance.Funds < agency.Value ? Localizer.Format("#autoLOC_7003246") : "")}"
                 // Funding.Instance.Funds >= agency.Value
                 bool storageEmpty = KWAgencies.NewPlayer() || (!KWAgencies.Player()?.StoredParts().Values.Any(i => i > 0) ?? true);
-                bool canTakeover = Funding.Instance.Funds >= agency.Value && Reputation.CurrentRep >= agency.Rep && ResearchAndDevelopment.Instance.Science == 0 &&
-                    storageEmpty && FlightGlobals.Vessels.Count == 0 && KWUtil.CareerOpts().takeoverBids;
+                bool canTakeover = (!KWUtil.CareerOpts().takeoverBids && KWAgencies.IsRnD(agency)) || (Funding.Instance.Funds >= agency.Value && Reputation.CurrentRep >= agency.Rep
+                    && ResearchAndDevelopment.Instance.Science == 0 && storageEmpty && FlightGlobals.Vessels.Count == 0 && KWUtil.CareerOpts().takeoverBids);
                 box.AddRange(new DialogGUIBase[] {
                     new DialogGUIBox($"<color=#D4F4FD>{Localizer.Format("#KWLOC_lead_desc", agency.Agent().Title)}</color>", 303, 70),
                     new DialogGUIBox($"<color=white>{agency.Agent().Title}</color>\n\n<color=#B4D455>" +
@@ -922,8 +947,9 @@ namespace KerbalWitchery {
                         Localizer.Format("#autoLOC_244028")) + "</color>\n<color=" + (FlightGlobals.Vessels.Count == 0 ? "#D4F4FD>" : "red>") + Localizer.Format("#autoLOC_8003014",
                         FlightGlobals.Vessels.Count == 0 ? Localizer.Format("#autoLOC_6003000") : Localizer.Format("#autoLOC_145786")) + "</color>", 303, 206) });
                 // + (canTakeover ? $"\n\n<color=green>{Localizer.Format("#KWLOC_takeoverBid")} {Localizer.Format("#autoLOC_238176")}</color>" : "")
-                if (canTakeover) box.Add(new DialogGUIButton($"{Localizer.Format("#autoLOC_900523")} {Localizer.Format("#KWLOC_takeoverBid")}",
-                    delegate { KWAgencies.Takeover(agency); appBtn.SetTexture(KWAgencies.Player().Agent().Logo); Popup(agency); }, 303, 32, true));
+                if (canTakeover) box.Add(new DialogGUIButton(KWUtil.CareerOpts().takeoverBids ? $"{Localizer.Format("#autoLOC_900523")} {Localizer.Format("#KWLOC_takeoverBid")}" :
+                    $"{Localizer.Format("#autoLOC_6001485")} {Localizer.Format(Mode.Lead.Description())}",
+                    delegate { KWAgencies.Takeover(agency); appBtn.SetTexture(KWAgencies.Player().Agent().Logo); }, 303, 32, true));
                 else box.Add(new DialogGUIBox($"<color=red>{Localizer.Format("#KWLOC_takeoverBid")} " +
                     Localizer.Format("#autoLOC_234994", Localizer.Format("#autoLOC_7003010").Replace(":", "")) + "</color>", 303, 32));
             } else if (mode == Mode.PrsOrd) {
@@ -944,8 +970,8 @@ namespace KerbalWitchery {
             } else if (mode == Mode.Train) {
                 DialogGUIBase boxOrBtn = new DialogGUIBase();
                 ProtoCrewMember hero = KWUtil.GetHero();
-                bool hasCourage = hero.courage >= Mathf.Clamp(0.07f * (float)Math.Pow(2, hero.experienceLevel - 1), 0f, 0.9f);
-                bool notStupid = hero.stupidity <= 1 - (hero.experienceLevel + 1) * 0.15f;
+                bool hasCourage = (int)Math.Round(hero.courage * 100) >= new int[] { 1, 5, 12, 24, 48, 88 }[hero.experienceLevel];
+                bool notStupid = hero.stupidity < new float[] { 0.95f, 0.85f, 0.7f, 0.5f, 0.25f, 0.1f }[hero.experienceLevel];
                 bool hasFunds = Funding.Instance.Funds >= (hero.experienceLevel + 1) * 15000;
                 box.Add(new DialogGUIBox($"<color=white>{Localizer.Format("#autoLOC_900345")} {Localizer.Format("#autoLOC_6002246")}: {hero.experienceLevel}</color>\n" +
                     $"<color={(hasFunds ? "#B4D455>" : "red>")}{Localizer.Format("#autoLOC_1900256")} " + Localizer.Format("#autoLOC_6003093",
@@ -978,7 +1004,8 @@ namespace KerbalWitchery {
             new DialogGUIButton(Localizer.Format(mode.Description()), delegate { Popup(agency, mode); }, 229, 32, true),
             new DialogGUIImage(new Vector2(32, 32), new Vector2(0, 0), Color.white, KWUtil.uiIcons[mode]));
         private void Popup(Agency agency = null, Mode mode = Mode.Main) { // , ListMode lMode = ListMode.All
-            if (agency == null) agency = KWAgencies.Player() ?? KWAgencies.RandomAgency();
+            if (agency == null) agency = KWAgencies.Player() ?? (!KWUtil.CareerOpts().takeoverBids ? KWAgencies.AList.Find(a => KWAgencies.IsRnD(a)) : KWAgencies.RandomAgency());
+            if (KWAgencies.NewPlayer() && mode == Mode.Main) mode = Mode.Desc;
             DialogGUIBase[] content = new DialogGUIBase[] {
                 TitleBar(agency, mode == Mode.Main),
                 new DialogGUIBox("", 330, 3),

@@ -354,31 +354,56 @@ namespace KerbalWitchery {
 
     }
 
-    public class ModuleKWOrganism : PartModule {
-        [KSPField(guiActive = true, guiFormat = "0.00", guiName = "growth rate", guiUnits = "%")]
+    public class ModuleKWGrowthOrganism : PartModule {
+        [KSPField(guiActive = true, guiFormat = "0.0", guiName = "growth rate", guiUnits = "%")]
         public float growthRate;
+        // [KSPField(guiActive = true, guiName = "feedback test")]
+        // public string feedback;
+
         [KSPField]
         public string growthResourceName;
 
+        private PartResource growthRes;
+
+        public override void OnStart(StartState state) {
+            growthRes = part.Resources.Get(growthResourceName);
+        }
+
         public void FixedUpdate() {
-            if (HighLogic.LoadedSceneIsFlight) {
+            if (HighLogic.LoadedSceneIsFlight && FlightGlobals.ready) {
                 double fixedDeltaTime = TimeWarp.fixedDeltaTime;
-                growthRate = 0;
-                foreach (ModuleResource inputRes in resHandler.inputResources) {
-                    double amt = inputRes.rate * fixedDeltaTime;
-                    growthRate = (float)(part.RequestResource(inputRes.id, amt) / amt) * 100f;
-                }
-                PartResource res = part.Resources.Get(growthResourceName);
-                growthRate *= (float)(res.amount / res.maxAmount);
-                if (growthRate > 0)
-                    foreach (ModuleResource outputRes in resHandler.outputResources) {
-                        part.TransferResource(outputRes.id, outputRes.rate * fixedDeltaTime * (growthRate / 100f));
+                growthRate = (float)(growthRes.amount / growthRes.maxAmount);
+                // feedback = "";
+                // double inputRateTotal = 1.0;
+                if (growthRate > 0f)
+                    foreach (ModuleResource inputRes in resHandler.inputResources) {
+                        double maxAmt = inputRes.rate * fixedDeltaTime;
+                        //double inputConsumed = part.RequestResource(inputRes.id, maxAmt * growthRate);
+                        //feedback += inputRes.name.Substring(0, 1) + "=" + inputConsumed.ToString("N4") + "|";
+                        double consumedPct = part.RequestResource(inputRes.id, maxAmt * growthRate) / maxAmt;
+                        if (consumedPct < growthRate) growthRate = (float)consumedPct;
                     }
+                if (growthRate > 0f)
+                    foreach (ModuleResource outputRes in resHandler.outputResources)
+                        // double amt = outputRes.rate * growthRate * fixedDeltaTime;
+                        part.RequestResource(outputRes.id, -outputRes.rate * growthRate * fixedDeltaTime);
+                        //part.TransferResource(outputRes.id, outputRes.rate * growthRate * fixedDeltaTime);
+                        // feedback += outputRes.name.Substring(0, 1) + "=" + amt.ToString("N4") + "|";
+                    
+                    //if (outputRes.name == growthResourceName) {
+                    //    double amt = outputRes.rate * growthRate * fixedDeltaTime;
+                    //    part.TransferResource(outputRes.id, amt);
+                    //    feedback += growthResourceName.Substring(0, 1) + "=" + amt.ToString("N2") + "|";
+                    //} else {
+                    //    //part.TransferResource(outputRes.id, outputRes.rate * outputPct * fixedDeltaTime);
+                    //    //feedback += outputRes.name.Substring(0, 1) + "=" + (outputRes.rate * outputPct * fixedDeltaTime).ToString("N2");
+                    //}
+                growthRate *= 100;
             }
         }
         public override string GetModuleDisplayName() => Localizer.Format("#KWLOC_livingOrganism");
         public override string GetInfo() {
-            string content = $"<color=#99FF00>{Localizer.Format("#autoLOC_244332")}</color>\n";
+            string content = $"<color=#99FF00>{Localizer.Format("#autoLOC_456381", "#autoLOC_900348")}</color>\n";
             foreach (ModuleResource inputRes in resHandler.inputResources)
                 content += KWUtil.FormatResource(inputRes);
             content += $"\n<color=#99FF00>{Localizer.Format("#autoLOC_900348")} {Localizer.Format("#autoLOC_244333")}</color>\n";
@@ -543,13 +568,16 @@ namespace KerbalWitchery {
         //}
     }
 
-    public class ModuleNonCryogenicContainer : PartModule {
-
+    public class ModuleKWNonCryoContainer : PartModule {
         private PartResource cryoRes;
+        // private PartResource gasRes;
+        // private int gasID;
         public override void OnStart(StartState state) {
             GameEvents.onPartResourceEmptyNonempty.Add(ResourceCheck);
             GameEvents.onPartResourceNonemptyEmpty.Add(ResourceCheck);
             cryoRes = part.Resources.Get("CryoFuel");
+            // gasRes = part.Resources.Get("HydroGas");
+            // gasID = PartResourceLibrary.Instance.GetDefinition("HydroGas").id;
             FuelCheck();
         }
         public void OnDestroy() {
@@ -561,9 +589,8 @@ namespace KerbalWitchery {
 
         public override void OnFixedUpdate() {
             if (HighLogic.LoadedSceneIsFlight && FlightGlobals.ready && cryoRes.amount > 0) {
-                double amount = cryoRes.amount * 0.00000005788 * TimeWarp.fixedDeltaTime;
-                amount = part.RequestResource("CryoFuel", amount, ResourceFlowMode.NO_FLOW);
-                part.TransferResource(PartResourceLibrary.Instance.GetDefinition("HydroGas").id, amount);
+                double amount = part.RequestResource("CryoFuel", cryoRes.amount * 0.00000005788 * TimeWarp.fixedDeltaTime, ResourceFlowMode.NO_FLOW);
+                part.RequestResource("HydroGas", -amount);
             }
         }
         private void ResourceCheck(PartResource res) {
@@ -578,7 +605,12 @@ namespace KerbalWitchery {
             else part.deactivate();
 
         }
-
+        //public void UpdateUI() {
+        //    if (HighLogic.LoadedSceneIsFlight) {
+        //        part.PartActionWindow.RemoveResourceControlFlight(gasRes);
+        //        part.PartActionWindow.RemoveResourceTransferControl(gasRes);
+        //    } else part.PartActionWindow.RemoveResourceControlEditor(gasRes);
+        //}
     }
 
 }

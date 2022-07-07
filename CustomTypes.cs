@@ -212,9 +212,9 @@ namespace KerbalWitchery {
             EditorPartList.Instance.ExcludeFilters.AddFilter(stFilter);
             EditorPartList.Instance.Refresh();
         }
-        public static ProtoCrewMember GetHero() => HighLogic.CurrentGame.CrewRoster.Crew.FirstOrDefault(c => c.isHero);
-        public static bool HeroReady() => HighLogic.CurrentGame.CrewRoster.Crew.Any(c => c.isHero && c.rosterStatus != ProtoCrewMember.RosterStatus.Dead &&
-            (HighLogic.CurrentGame.Parameters.Difficulty.MissingCrewsRespawn || c.rosterStatus != ProtoCrewMember.RosterStatus.Missing));
+        public static ProtoCrewMember GetHero() => HighLogic.CurrentGame.CrewRoster.Applicants.Concat(HighLogic.CurrentGame.CrewRoster.Crew).FirstOrDefault(c => c.isHero);
+        public static bool HeroReady() => HighLogic.CurrentGame.CrewRoster.Applicants.Concat(HighLogic.CurrentGame.CrewRoster.Crew).Any(c => c.isHero
+            && c.rosterStatus != ProtoCrewMember.RosterStatus.Dead && (HighLogic.CurrentGame.Parameters.Difficulty.MissingCrewsRespawn || c.rosterStatus != ProtoCrewMember.RosterStatus.Missing));
         public static void ToggleFacilityLock(bool locked) {
             foreach (FieldInfo field in HighLogic.CurrentGame.Parameters.SpaceCenter.GetType().GetFields().Where(f => f.Name != "CanLeaveToMainMenu"))
                 field.SetValue(HighLogic.CurrentGame.Parameters.SpaceCenter, !locked);
@@ -270,9 +270,9 @@ namespace KerbalWitchery {
             ConfigNode stNode = aNode.AddNode("STRATEGIES");
             strats.ToList().ForEach(s => stNode.AddValue(s.Key + "", s.Value));
             ConfigNode sNode = aNode.AddNode("SCI");
-            foreach (KeyValuePair<string, Dictionary<SciType, float>> pair1 in Sci.Where(p => !p.Value.ContainsValue(0f))) {
+            foreach (var pair1 in Sci.Where(p1 => p1.Value.Any(p2 => p2.Value != 0f))) {
                 ConfigNode bodyNode = sNode.AddNode(pair1.Key);
-                foreach (KeyValuePair<SciType, float> pair2 in pair1.Value.Where(p => p.Value != 0))
+                foreach (var pair2 in pair1.Value.Where(p => p.Value != 0f))
                     bodyNode.AddValue("" + pair2.Key, pair2.Value); }
             ConfigNode lNode = aNode.AddNode("LABS");
             Labs.ToList().ForEach(l => lNode.AddValue(l.Key + "", l.Value));
