@@ -36,12 +36,12 @@ namespace KerbalWitchery {
 
         }
         public override void OnLoad(ConfigNode node) {
-            // programs = node.HasNode("PROGRAM") ? node.GetNodes("PROGRAM").Select(n => new Program(n)).ToList() : goals.Keys.Select(t => new Program(t)).ToList();
+            programs = node.HasNode("PROGRAM") ? node.GetNodes("PROGRAM").Select(n => new Program(n)).ToList() : goals.Keys.Select(t => new Program(t)).ToList();
 
         }
         public override void OnSave(ConfigNode node) {
 
-            // programs.ForEach(p => p.Save(node));
+            programs.ForEach(p => p.Save(node));
 
         }
 
@@ -106,7 +106,7 @@ namespace KerbalWitchery {
 
             }
             public void Donate(float amount) {
-                Donors[KWAgencies.Player().Name] += amount;
+                Donors[KWAgencies.GetPlayer().Name] += amount;
 
             }
 
@@ -122,12 +122,8 @@ namespace KerbalWitchery {
 
         private static readonly Dictionary<SciType, string[]> sciLabs = GameDatabase.Instance.GetConfigNode("KerbalWitchery/KWSciLabs").GetNodes().ToDictionary(n =>
             (SciType)Enum.Parse(typeof(SciType), n.name), n => n.GetValues());
-        public void Start() {
-
-        }
-        public void OnDisable() {
-
-        }
+        public void Start() { }
+        public void OnDisable() { }
         public override void OnLoad(ConfigNode node) {
             AList = node.HasNode("AGENCY") ? node.GetNodes("AGENCY").Select(n => new Agency(n)).ToList() :
                 AgentList.Instance.Agencies.OrderBy(a => a.Name).Select(a => new Agency(a)).ToList();
@@ -146,62 +142,68 @@ namespace KerbalWitchery {
             ConfigNode jNode = node.AddNode("JUNKYARD");
             junkParts.Where(p => p.Value > 0).ToList().ForEach(p => jNode.AddValue(p.Key, p.Value));
         }
-        public static Agency Player() => AList.FirstOrDefault(a => a.Leader != "#KWLOC_aiControlled");
-        public static bool NewPlayer() => Player() == null;
-        public static bool PlayerIsAgency(Agency agency) => agency.Name == Player()?.Name;
-        public static bool IsRnD(Agency agency) => agency.Name == "Research & Development Department";
+        public static Agency GetPlayer() => AList.FirstOrDefault(a => a.IsPlayer());
+        // public static bool NewPlayer() => Player() == null;
+        // public static bool PlayerIsAgency(Agency agency) => agency.Name == Player()?.Name;
         public static Agency GetAgency(Agent agent) => AList.FirstOrDefault(a => a.Name == agent.Name);
         public static Agency GetAgency(string name) => AList.FirstOrDefault(a => a.Name == name);
         public static Agency GetManufacturer(AvailablePart part) => AList.FirstOrDefault(a => a.Agent().Title == part.manufacturer);
         public static string[] MfPartTechs(Agency agency) => PartLoader.LoadedPartsList.Where(p => p.manufacturer == agency.Agent().Title).Select(p => p.TechRequired).Distinct().ToArray();
-        public static Agency Junkyard() => AList.FirstOrDefault(a => a.Name.Contains("Junkyard"));
+        public static Agency GetJunkyard() => AList.FirstOrDefault(a => a.IsJunkyard());
+        // public static bool IsJunkyard(Agency agency) => agency.Name == "Jebediah Kerman's Junkyard and Spacecraft Parts Co";
+        public static Agency GetRnD() => AList.FirstOrDefault(a => a.IsRnD());
+        // public static bool IsRnD(Agency agency) => agency.Name == "Research & Development Department";
+        public static Agency GetKWF() => AList.FirstOrDefault(a => a.IsKWF());
+        // public static bool IsKWF(Agency agency) => agency.Name == "Kerbin World-Firsts Record-Keeping Society";
         public static Agency RandomAgency() => AList.ElementAt(UnityEngine.Random.Range(0, AList.Count));
-        public static void AddStanding(Agency agency, float amt) => standings[GetStKey(agency, Player())] += amt;
-        public static void AddStanding(Agent agent, float amt) => standings[GetStKey(GetAgency(agent), Player())] += amt;
+        public static void AddStanding(Agency agency, float amt) => standings[GetStKey(agency, GetPlayer())] += amt;
+        public static void AddStanding(Agent agent, float amt) => standings[GetStKey(GetAgency(agent), GetPlayer())] += amt;
         public static void AddStanding(Agency agency1, Agency agency2, float amt) => standings[GetStKey(agency1, agency2)] += amt;
-        public static float GetStanding(Agent agent) => standings[GetStKey(GetAgency(agent), Player())];
-        public static float GetStanding(Agency agency) => standings[GetStKey(agency, Player())];
+        public static float GetStanding(Agent agent) => standings[GetStKey(GetAgency(agent), GetPlayer())];
+        public static float GetStanding(Agency agency) => standings[GetStKey(agency, GetPlayer())];
         public static List<AvailablePart> GetAvailableParts(Agency agency) => PartLoader.LoadedPartsList.Where(p => p.manufacturer == agency.Agent().Title && 
             ResearchAndDevelopment.PartTechAvailable(p) && PartThresholdMet(p)).ToList();
+        public static bool PlayerCanOutSrc(Agency agency) => !agency.Labs.Keys.Any(l => GetPlayer().Labs.Keys.Contains(l));
         public static Dictionary<SciType, int> LabCosts() => KWUtil.TechTree().Where(t => Enum.TryParse(t.techID.Replace("sci", ""), out SciType sci)).ToDictionary(t =>
             (SciType)Enum.Parse(typeof(SciType), t.techID.Replace("sci", "")), t => t.scienceCost);
         public static SciType[] Labs(Agency agency) => sciLabs.Where(p => p.Value.Contains(agency.Name))?.Select(p => p.Key).ToArray();
         public static bool TryPayAgency(Agency agency, float amount) {
-            if (agency == null || PlayerIsAgency(agency)) return false;
+            if (agency == null || agency.IsPlayer()) return false;
             agency.AddValue(amount);
             AddStanding(agency, amount / 10000);
             return true;
         }
-        public static void UpdatePlayerCurrencies() {
-            Player().SetRep(Reputation.CurrentRep);
-            Player().SetValue(Funding.Instance.Funds);
-        }
-        public static void ResetPlayer() {
-            Player().UnsetPlayer();
-            Funding.Instance.SetFunds(HighLogic.CurrentGame.Parameters.Career.StartingFunds, TransactionReasons.None);
-            Reputation.Instance.SetReputation(HighLogic.CurrentGame.Parameters.Career.StartingReputation, TransactionReasons.None);
-            ResearchAndDevelopment.Instance.SetScience(HighLogic.CurrentGame.Parameters.Career.StartingScience, TransactionReasons.None);
-            foreach (Vessel vessel in FlightGlobals.Vessels.Where(v => (int)v.vesselType > 2)) vessel.DestroyVesselComponents();
-        }
-        public static void Takeover(Agency agency) {
-            HighLogic.CurrentGame.flagURL = agency.Agent().LogoURL;
-            KWUtil.GetHero().type = ProtoCrewMember.KerbalType.Crew;
-            if (NewPlayer()) {
-                agency.SetPlayer();
-                UpdatePlayerCurrencies();
-                KWUtil.ToggleFacilityLock(false);
-                // KWUtil.UnlockTech("Administration");
-                // KWUtil.UpgradeFacility(SpaceCenterFacility.Administration);
-            } else {
-                Agency prev = Player();
-                prev.UnsetPlayer();
-                agency.SetPlayer();
-                // Reputation.Instance.SetReputation(agency.Rep, TransactionReasons.None);
-                if (agency.Value < 0) Funding.Instance.AddFunds(agency.Value, TransactionReasons.None);
-                // agency.SetValue(Funding.Instance.Funds);
-                prev.AddValue(-Math.Abs(agency.Value));
-            }
-        }
+        //public static void UpdatePlayerCurrencies() {
+        //    Player()?.SetRep(Reputation.CurrentRep);
+        //    Player()?.SetValue(Funding.Instance.Funds);
+        //}
+        //public static void ResetPlayer() {
+        //    Player().UnsetPlayer();
+        //    Funding.Instance.SetFunds(HighLogic.CurrentGame.Parameters.Career.StartingFunds, TransactionReasons.None);
+        //    Reputation.Instance.SetReputation(HighLogic.CurrentGame.Parameters.Career.StartingReputation, TransactionReasons.None);
+        //    ResearchAndDevelopment.Instance.SetScience(HighLogic.CurrentGame.Parameters.Career.StartingScience, TransactionReasons.None);
+        //    // foreach (Vessel vessel in FlightGlobals.Vessels.Where(v => (int)v.vesselType > 2)) vessel.DestroyVesselComponents();
+        //}
+        //public static void Takeover(Agency agency) {
+        //    HighLogic.CurrentGame.flagURL = agency.Agent().LogoURL;
+        //    HighLogic.CurrentGame.CrewRoster.HireApplicant(KWUtil.GetHero());
+        //    if (Player() == null) {
+        //        agency.SetPlayer();
+        //        // UpdatePlayerCurrencies();
+        //        KWUtil.ToggleFacilityLock(false);
+        //        KWUtil.UpgradeFacility(SpaceCenterFacility.MissionControl);
+        //        // KWUtil.UnlockTech("Administration");
+        //        // KWUtil.UpgradeFacility(SpaceCenterFacility.Administration);
+        //    } else {
+        //        Agency prev = Player();
+        //        prev.UnsetPlayer();
+        //        agency.SetPlayer();
+        //        // Reputation.Instance.SetReputation(agency.Rep, TransactionReasons.None);
+        //        if (agency.Value < 0) Funding.Instance.AddFunds(agency.Value, TransactionReasons.None);
+        //        // agency.SetValue(Funding.Instance.Funds);
+        //        prev.AddValue(-Math.Abs(agency.Value));
+        //    }
+        //}
         // public static float GetStanding(Agency agency1, Agency agency2) => Standings[GetStKey(agency1, agency2)];
         private static string[] GetStKey(Agency agency1, Agency agency2) => standings.FirstOrDefault(s => s.Key.Contains(agency1.Name) && s.Key.Contains(agency2.Name)).Key;
 
@@ -213,7 +215,8 @@ namespace KerbalWitchery {
                 $"yellow>{Localizer.Format("#autoLOC_184754")}",
                 $"green>{Localizer.Format("#autoLOC_184758")}",
                 $"#00ff00ff>{Localizer.Format("#autoLOC_184762")}" };
-            return $"{Localizer.Format("#KWLOC_standing")} <color={descs[Mathf.Clamp((int)Math.Floor(((80 + GetStanding(agency)) / 200) * 5), 0, 4)]} ({GetStanding(agency):N0})</color>";
+            return $"<color=white>{Localizer.Format("#KWLOC_standing")}:</color> " +
+                $"<color={descs[Mathf.Clamp((int)Math.Floor(((80 + GetStanding(agency)) / 200) * 5), 0, 4)]} ({GetStanding(agency):N0})</color>";
         }
         public static bool PartThresholdMet(AvailablePart part) {
             if (!KWUtil.CareerOpts().partsReqSts) return true;
@@ -222,10 +225,9 @@ namespace KerbalWitchery {
             if (GetStanding(agency) < KWUtil.CareerOpts().minStAgency) return false;
             return Mathf.Max(GetStanding(agency) * 10000, KWUtil.CareerOpts().partStThrs) >= part.entryCost;
         }
-        public static int PricePart(AvailablePart part) => PlayerIsAgency(GetManufacturer(part)) ? (int)Math.Round(part.entryCost * 0.666) : part.entryCost;
+        public static int PricePart(AvailablePart part) => (GetManufacturer(part)?.IsPlayer() ?? false) ? (int)Math.Round(part.entryCost * 0.5) : part.entryCost;
         public static void OrderPart(AvailablePart part, bool store = true) {
-            HighLogic.CurrentGame.Parameters.CustomParams<GameParameters.AdvancedParams>().AllowNegativeCurrency = true;
-            if (store) Player().StorePart(part);
+            if (store) GetPlayer().StorePart(part);
             Funding.Instance.AddFunds(-PricePart(part), TransactionReasons.RnDPartPurchase);
             TryPayAgency(GetManufacturer(part), PricePart(part));
         }
@@ -234,17 +236,17 @@ namespace KerbalWitchery {
         public static void BuyJunk(AvailablePart part) {
             if (junkParts.ContainsKey(part.name))
                 if (junkParts[part.name] > 0) {
-                    if (!PlayerIsAgency(Junkyard())) {
+                    if (!GetJunkyard().IsPlayer()) {
                         Funding.Instance.AddFunds(-PriceJunk(part), TransactionReasons.RnDPartPurchase);
-                        TryPayAgency(Junkyard(), PriceJunk(part)); }
+                        TryPayAgency(GetJunkyard(), PriceJunk(part)); }
                     junkParts[part.name]--;
-                    Player().StorePart(part); }
+                    GetPlayer().StorePart(part); }
         }
         public static void SellJunk(AvailablePart part) {
-            if (Player().RequestPart(part)) {
-                if (!PlayerIsAgency(Junkyard())) {
+            if (GetPlayer().RequestPart(part)) {
+                if (!GetJunkyard().IsPlayer()) {
                     Funding.Instance.AddFunds(PriceJunk(part, false), TransactionReasons.RnDPartPurchase);
-                    Junkyard().AddValue(-PriceJunk(part, false)); }
+                    GetJunkyard().AddValue(-PriceJunk(part, false)); }
                 if (!junkParts.ContainsKey(part.name)) junkParts[part.name] = 0;
                 junkParts[part.name]++;
             }
@@ -271,40 +273,52 @@ namespace KerbalWitchery {
 
     }
     
-    // ScenarioCreationOptions.AddToAllGames
-    [KSPScenario(ScenarioCreationOptions.None, new GameScenes[1] { GameScenes.FLIGHT })]
-    public class KWHealth : ScenarioModule {
-        private static Dictionary<string, float> hp;
+    [KSPScenario(ScenarioCreationOptions.AddToAllGames, new GameScenes[3] { GameScenes.SPACECENTER, GameScenes.FLIGHT, GameScenes.TRACKSTATION })]
+    public class KWKerbs : ScenarioModule {
+        public static List<Kerb> KList { get; private set; }
+        // private static Dictionary<string, double> healthLoss;
         public void Start() {
-
-
+            // GameEvents.onKerbalAddComplete.Add(AddedKerbal);
+            // GameEvents.onKerbalRemoved.Add(RemovedKerbal);
+            // GameEvents.OnCrewmemberHired.Add(HiredKerbal);
         }
         public void OnDisable() {
-
+            // GameEvents.onKerbalAddComplete.Remove(AddedKerbal);
+            // GameEvents.onKerbalRemoved.Remove(RemovedKerbal);
+            // GameEvents.OnCrewmemberHired.Remove(HiredKerbal);
         }
 
         public override void OnLoad(ConfigNode node) {
-            hp = new Dictionary<string, float>();
-            foreach (ConfigNode kNode in node.GetNodes())
-                hp[kNode.GetValue("name")] = float.Parse(kNode.GetValue("hp"));
-
+            KList = node.GetNodes("Kerb").Select(n => new Kerb(n)).ToList();
+            foreach (ProtoCrewMember crew in HighLogic.CurrentGame.CrewRoster.Crew.Where(c => !KList.Any(k => k.Crew.name == c.name)))
+                KList.Add(new Kerb(crew));
+            // HighLogic.CurrentGame.CrewRoster.Crew.Select(c => new Kerb(c)).ToList();
+            // HighLogic.CurrentGame.CrewRoster.Crew.Select(c => new KerbalLife(c)).ToList();
+            //healthLoss = HighLogic.CurrentGame.CrewRoster.Crew.ToDictionary(c => c.name, c => 0.0);
+            //foreach (ConfigNode kNode in node.GetNodes("KERBAL"))
+            //    healthLoss[kNode.GetValue("name")] = double.Parse(kNode.GetValue("healthLoss"));
         }
         public override void OnSave(ConfigNode node) {
-            foreach (var pair in hp) {
-                ConfigNode kNode = node.AddNode("KERBAL");
-                kNode.AddValue("name", pair.Key);
-                kNode.AddValue("hp", pair.Value);
-            }
+            KList.Where(k => HighLogic.CurrentGame.CrewRoster.Applicants.Concat(HighLogic.CurrentGame.CrewRoster.Crew).Contains(k.Crew)).ToList().ForEach(k => k.Save(node));
+            
+            //foreach (var pair in healthLoss) {
+            //    ConfigNode kNode = node.AddNode("KERBAL");
+            //    kNode.AddValue("name", pair.Key);
+            //    kNode.AddValue("healthLoss", pair.Value);
+            //}
         }
+        public static Kerb GetKerb(ProtoCrewMember crew) => KList.FirstOrDefault(k => k.Crew.name == crew.name);
 
-        public static float GetHP(string kerbal) => hp.ContainsKey(kerbal) ? Mathf.Clamp(hp[kerbal], 0f, 1f) : 0f;
-        public static void ModifyHP(string kerbal, float amount) {
-            if (hp.ContainsKey(kerbal)) {
-                if (hp[kerbal] < 1) hp[kerbal] += amount;
-                if (hp[kerbal] <= 0)
-                    HighLogic.CurrentGame.CrewRoster[kerbal].Die();
-            }
-        }
+        //public static double GetHealthLoss(ProtoCrewMember crew) => healthLoss.ContainsKey(crew.name) ? healthLoss[crew.name] : 0.0;
+        //public static void AddHealthLoss(ProtoCrewMember crew, double amount) {
+        //    if (!healthLoss.ContainsKey(crew.name)) healthLoss[crew.name] = 0.0;
+        //    healthLoss[crew.name] += amount;
+        //    if (healthLoss[crew.name] < 0) healthLoss[crew.name] = 0;
+        //}
+
+        // private void AddedKerbal(ProtoCrewMember crew) => KList.Add(new KerbalLife(crew));
+        // private void HiredKerbal(ProtoCrewMember crew, int _) { if (GetKerb(crew) == null) KList.Add(new Kerb(crew)); }
+        // private void RemovedKerbal(ProtoCrewMember crew) => KList.Remove(GetKerbLife(crew));
 
     }
 

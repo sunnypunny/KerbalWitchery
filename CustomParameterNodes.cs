@@ -37,51 +37,6 @@ namespace KerbalWitchery {
 
     }
 
-    //public class KWKerbalOptions : KWParams {
-    //    public override GameParameters.GameMode GameMode => GameParameters.GameMode.ANY;
-    //    public override bool HasPresets => true;
-    //    public override int SectionOrder => 0;
-    //    public override string Title => "#autoLOC_900441";
-
-    //    [GameParameters.CustomParameterUI("#KWLOC_useSaveName", newGameOnly = true)]
-    //    public bool useSaveName;
-    //    [GameParameters.CustomParameterUI("#autoLOC_901054", newGameOnly = true)]
-    //    public string name;
-    //    [GameParameters.CustomParameterUI("#autoLOC_900447", newGameOnly = true)]
-    //    public string gender;
-    //    [GameParameters.CustomFloatParameterUI("#autoLOC_900436", displayFormat = "P0", newGameOnly = true)]
-    //    public float courage;
-    //    [GameParameters.CustomFloatParameterUI("#autoLOC_900438", displayFormat = "P0", newGameOnly = true)]
-    //    public float stupidity;
-    //    [GameParameters.CustomParameterUI("#autoLOC_900440", newGameOnly = true)]
-    //    public bool badS;
-
-    //    public readonly string[] genders = new string[2] { Localizer.Format("#autoLOC_900434"), Localizer.Format("#autoLOC_900444") };
-
-    //    public override bool Interactible(MemberInfo member, GameParameters parameters) => new string[2] { nameof(gender), nameof(useSaveName) }.Contains(member.Name) ||
-    //        (member.Name == nameof(name) && !parameters.CustomParams<KWKerbalOptions>().useSaveName);
-
-    //    public override void SetDifficultyPreset(GameParameters.Preset preset) {
-    //        ProtoCrewMember.Gender gend = (ProtoCrewMember.Gender)UnityEngine.Random.Range(0, 2);
-    //        name = CrewGenerator.GetRandomName(gend, new KSPRandom(UnityEngine.Random.Range(1, 999999) + DateTime.Now.Millisecond));
-    //        gender = genders[(int)gend];
-    //        courage = 0.12f + (int)preset * 0.25f + UnityEngine.Random.Range(-0.12f, 0.13f);
-    //        stupidity = 0.12f + (3 - (int)preset) * 0.25f + UnityEngine.Random.Range(-0.12f, 0.13f);
-    //        badS = (int)preset * 10 > UnityEngine.Random.Range(0, 100);
-    //    }
-
-    //    public override IList ValidValues(MemberInfo member) {
-    //        if (member.Name == nameof(name)) {
-    //            List<string> names = new List<string>();
-    //            for (int i = 0; i < 100; i++)
-    //                names.Add(CrewGenerator.GetRandomName(i < 51 ? ProtoCrewMember.Gender.Female : ProtoCrewMember.Gender.Male, new KSPRandom(i + DateTime.Now.Millisecond)));
-    //            return names;
-    //        } else if (member.Name == nameof(gender)) return genders;
-    //        return null;
-    //    }
-
-    //}
-
     public class KWCareerOptions : KWParams {
         public override GameParameters.GameMode GameMode => GameParameters.GameMode.CAREER;
         public override bool HasPresets => true;
