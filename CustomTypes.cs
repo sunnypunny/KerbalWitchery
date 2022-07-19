@@ -50,13 +50,13 @@ namespace KerbalWitchery {
     
     public class KWUtil {
         public static readonly Dictionary<KWUI.Mode, Texture2D> uiIcons = new Dictionary<KWUI.Mode, Texture2D> {
-            [KWUI.Mode.Take] = GameDatabase.Instance.GetTexture("Squad/PartList/SimpleIcons/probe_control_unit", false),
             [KWUI.Mode.Negs] = GameDatabase.Instance.GetTexture("Squad/Strategies/Icons/AggressiveNegotiations", false),
+            [KWUI.Mode.AppCmpn] = GameDatabase.Instance.GetTexture("Squad/Strategies/Icons/AppreciationCampaign", false),
             [KWUI.Mode.Bail] = GameDatabase.Instance.GetTexture("Squad/Strategies/Icons/BailOutGrant", false),
             [KWUI.Mode.FRaise] = GameDatabase.Instance.GetTexture("Squad/Strategies/Icons/FundraisingCampaign", false),
             [KWUI.Mode.IPSell] = GameDatabase.Instance.GetTexture("Squad/Strategies/Icons/ResearchRightsSellOut", false),
-            [KWUI.Mode.JunkBuy] = GameDatabase.Instance.GetTexture("Squad/PartList/SimpleIcons/R&D_node_icon_generic", false),
-            [KWUI.Mode.JunkSell] = GameDatabase.Instance.GetTexture("Squad/PartList/SimpleIcons/R&D_node_icon_robotics", false),
+            [KWUI.Mode.JunkBuy] = GameDatabase.Instance.GetTexture("Squad/PartList/SimpleIcons/R&D_node_icon_robotics", false),
+            [KWUI.Mode.JunkSell] = GameDatabase.Instance.GetTexture("Squad/PartList/SimpleIcons/R&D_node_icon_specializedelectrics", false),
             [KWUI.Mode.Lead] = GameDatabase.Instance.GetTexture("Squad/Strategies/Icons/LeadershipInitiative", false),
             [KWUI.Mode.OpenSrc] = GameDatabase.Instance.GetTexture("Squad/Strategies/Icons/OpenSourceTechProgram", false),
             [KWUI.Mode.OutSrc] = GameDatabase.Instance.GetTexture("Squad/Strategies/Icons/OutsourcedResearch", false),
@@ -65,7 +65,8 @@ namespace KerbalWitchery {
             [KWUI.Mode.Patents] = GameDatabase.Instance.GetTexture("Squad/Strategies/Icons/PatentsLicensing", false),
             [KWUI.Mode.Interns] = GameDatabase.Instance.GetTexture("Squad/Strategies/Icons/UnpaidResearchProgram", false),
             [KWUI.Mode.PrsOrd] = GameDatabase.Instance.GetTexture("Squad/Contracts/Icons/report", false),
-            [KWUI.Mode.Train] = GameDatabase.Instance.GetTexture("Squad/Contracts/Icons/ksc", false)
+            [KWUI.Mode.Train] = GameDatabase.Instance.GetTexture("Squad/PartList/SimpleIcons/deployable_ground_part", false),
+            [KWUI.Mode.Take] = GameDatabase.Instance.GetTexture("Squad/PartList/SimpleIcons/probe_control_unit", false)
         };
         public static readonly Dictionary<SciType, Texture2D> sciIcons = new Dictionary<SciType, Texture2D> {
             [SciType.Misc] = GameDatabase.Instance.GetTexture("Squad/PartList/SimpleIcons/R&D_node_icon_nanolathing", false),
@@ -89,22 +90,27 @@ namespace KerbalWitchery {
             [ProgType.Robotics] = GameDatabase.Instance.GetTexture("Squad/PartList/SimpleIcons/R&D_node_icon_robotics", false),
             [ProgType.Probes] = GameDatabase.Instance.GetTexture("Squad/PartList/SimpleIcons/R&D_node_icon_advunmanned", false),
             [ProgType.DeepSpace] = GameDatabase.Instance.GetTexture("Squad/PartList/SimpleIcons/R&D_node_icon_veryheavyrocketry", false) };
-        public static readonly bool lifeSupport = System.IO.File.Exists(KSPUtil.ApplicationRootPath + "GameData/KerbalWitchery/CFGs/LifeSupport.cfg");
+        // public static readonly bool lifeSupport = System.IO.File.Exists(KSPUtil.ApplicationRootPath + "GameData/KerbalWitchery/CFGs/LifeSupport.cfg");
         public static readonly Dictionary<string, ConfigNode.ValueList> bodyResources = 
             GameDatabase.Instance.GetConfigNode("KerbalWitchery/KWBodyResources").GetNodes().ToDictionary(n => n.name, n => n.values);
         //public static readonly Dictionary<TankType, string[]> tankResources = GameDatabase.Instance.GetConfigNode("KerbalWitchery/KWTanks").GetNodes().ToDictionary(
         //    n => (TankType)Enum.Parse(typeof(TankType), n.name), n => n.GetValues());
+        public static readonly Dictionary<Currency, string> cSprite = new Dictionary<Currency, string> {
+            [Currency.Funds] = "<sprite=\"CurrencySpriteAsset\" name=\"Funds\" color=#B4D455>",
+            [Currency.Reputation] = "<sprite=\"CurrencySpriteAsset\" name=\"Reputation\" color=#E0D503>",
+            [Currency.Science] = "<sprite=\"CurrencySpriteAsset\" name=\"Science\" color=#6DCFF6>"
+        };
         public static readonly string labConverterIDs = GameDatabase.Instance.GetConfigNode("KerbalWitchery/KWScience").GetValue("LabConverterIDs");
         public static readonly string evaKitConsumerIDs = GameDatabase.Instance.GetConfigNode("KerbalWitchery/KWScience").GetValue("EVAKitConsumerIDs");
-        public static bool CareerMode() => HighLogic.CurrentGame.Mode == Game.Modes.CAREER;
-        public static bool KSCScene() => HighLogic.LoadedScene == GameScenes.SPACECENTER;
-        public static bool EditorScene() => HighLogic.LoadedSceneIsEditor;
-        public static bool FlightScene() => HighLogic.LoadedSceneIsFlight;
-        public static bool TrackScene() => HighLogic.LoadedScene == GameScenes.TRACKSTATION;
+        // public static bool CareerMode() => HighLogic.CurrentGame.Mode == Game.Modes.CAREER;
+        // public static bool KSCScene() => HighLogic.LoadedScene == GameScenes.SPACECENTER;
+        // public static bool EditorScene() => HighLogic.LoadedSceneIsEditor;
+        // public static bool FlightScene() => HighLogic.LoadedSceneIsFlight;
+        // public static bool TrackScene() => HighLogic.LoadedScene == GameScenes.TRACKSTATION;
         // public static KWKerbalOptions KerbalOpts() => HighLogic.CurrentGame.Parameters.CustomParams<KWKerbalOptions>();
         public static KWCareerOptions CareerOpts() => HighLogic.CurrentGame.Parameters.CustomParams<KWCareerOptions>();
         public static KWGeneralOptions GenOpts() => HighLogic.CurrentGame.Parameters.CustomParams<KWGeneralOptions>();
-        public static GameParameters.SpaceCenterParams SCParams() => HighLogic.CurrentGame.Parameters.SpaceCenter;
+        // public static GameParameters.SpaceCenterParams SCParams() => HighLogic.CurrentGame.Parameters.SpaceCenter;
         // public static bool IsNewGame() => KWAgencies.Player() == null; // change to => IsTechLocked("FlagPole");
         public static ProtoTechNode[] TechTree() => AssetBase.RnDTechTree.GetTreeTechs();
         public static bool IsTechLocked(string techID) => TechTree().Select(t => t.techID).Contains(techID) && ResearchAndDevelopment.Instance.GetTechState(techID) == null;
@@ -141,49 +147,7 @@ namespace KerbalWitchery {
                     p.TechRequired != null && !p.TechRequired.Contains("Unresearcheable") && !p.TechHidden && !p.name.StartsWith("kerbalEVA") && p.name != "flag"))
                     part.TechRequired = KWAgencies.GetManufacturer(part)?.Agent().LogoURL.Split('/').Last() ?? "found";
         }
-        public static double GetCabPrskPa(Part part) => (part.Resources.Get("IntakeAir").amount / part.Resources.Get("IntakeAir").maxAmount) * 101.325;
-        public static void OpenCapsule(Part part) {
-            part.Resources.Get("IntakeAir").amount = (part.vessel.mainBody.atmosphereContainsOxygen ? part.vessel.staticPressurekPa / 101.325 : 0) * part.Resources.Get("IntakeAir").maxAmount;
-
-            // int airID = PartResourceLibrary.Instance.GetDefinition("IntakeAir").id;
-            // int igID = PartResourceLibrary.Instance.GetDefinition("InertGas").id;
-            // int oxID = PartResourceLibrary.Instance.GetDefinition("Oxidizer").id;
-            // int toxID = PartResourceLibrary.Instance.GetDefinition("ToxicGas").id;
-            // double cabAir = part.Resources.Get(airID).amount;
-            // double cabIG = part.Resources.Get(igID).amount;
-            // double cabOx = part.Resources.Get(oxID).amount;
-            // double cabTox = part.Resources.Get(toxID).amount;
-            //double atmPrs = part.vessel.staticPressurekPa;
-            //double oneAtmCab = part.Resources.Get("Oxidizer").maxAmount * 0.2;
-            //part.Resources.Get("InertGas").amount = part.vessel.mainBody.atmosphereContainsOxygen ? (atmPrs / 101.325) * oneAtmCab * 0.79 : 0;
-            //part.Resources.Get("Oxidizer").amount = part.vessel.mainBody.atmosphereContainsOxygen ? (atmPrs / 101.325) * oneAtmCab * 0.21 : 0;
-            //part.Resources.Get("ToxicGas").amount = ("Eve|Duna".Contains(part.vessel.mainBody.name) && atmPrs > 0) ? (atmPrs / 101.325) * oneAtmCab : 0;
-            // part.Resources.Get("Oxidizer").amount = 0;
-            // part.Resources.Get("InertGas").amount = 0;
-            // if (cabOx > 0) part.RequestResource(oxID, cabOx, ResourceFlowMode.NO_FLOW);
-            // if (cabIG > 0) part.RequestResource(igID, cabIG, ResourceFlowMode.NO_FLOW);
-            //if ("Eve|Duna".Contains(part.vessel.mainBody.name) && atmPrs > 0) {
-            //    part.Resources.Get("InertGas").amount = 0;
-            //    part.Resources.Get("Oxidizer").amount = 0;
-            //    part.Resources.Get("ToxicGas").amount = (atmPrs / 101.325) * oneAtmCab;
-            //    // if (cabAir > 0) part.RequestResource(airID, cabAir, ResourceFlowMode.NO_FLOW);
-            //    //if (GetCabPrskPa(part) > atmPrs)
-            //    //    part.RequestResource(toxID, (GetCabPrskPa(part) - atmPrs) / 100 * cabTox, ResourceFlowMode.NO_FLOW);
-            //    //else part.TransferResource(toxID, atmPrs / 101.325 * oneAtmCab - cabTox);
-            //} else {
-            //    part.Resources.Get("InertGas").amount = toxicAtmo ? 0 : (atmPrs / 101.325) * oneAtmCab * 0.79;
-            //    part.Resources.Get("Oxidizer").amount = toxicAtmo ? 0 : (atmPrs / 101.325) * oneAtmCab * 0.21;
-            //    part.Resources.Get("ToxicGas").amount = toxicAtmo ? (atmPrs / 101.325) * oneAtmCab : 0;
-            //    //if (cabTox > 0) part.RequestResource(toxID, cabTox, ResourceFlowMode.NO_FLOW);
-            //    //if (atmPrs == 0 || !part.vessel.mainBody.atmosphereContainsOxygen) 
-            //    //    if (cabAir > 0) part.RequestResource(airID, cabAir, ResourceFlowMode.NO_FLOW);
-            //    //else if (GetCabPrskPa(part) > atmPrs)
-            //    //    part.RequestResource(airID, (GetCabPrskPa(part) - atmPrs) / 100 * cabAir, ResourceFlowMode.NO_FLOW);
-            //    //else part.TransferResource(airID, atmPrs / 101.325 * oneAtmCab - cabAir);
-            //}
-            // part.AddForce(part.airlock.forward * ((float)(cabinPrs - atmPrs) * part.mass));
-        }
-
+        
         public static string FormatResource(ModuleResource res) {
             if (res.rate >= 0.1) return Localizer.Format("#autoLOC_244197", new string[2] { res.resourceDef.displayName, res.rate.ToString("N2") });
             else if (res.rate >= 1 / 600f)
@@ -201,10 +165,10 @@ namespace KerbalWitchery {
             else return (input * KSPUtil.dateTimeFormatter.Day).ToString("N2");
         }
 
-        public static bool VesselRecoveryCheck(Vessel vessel) {
-            if (vessel.LandedInKSC) return true;
-            if (vessel.LandedInStockLaunchSite && vessel.Parts.Count == 1 && (vessel.isEVA || vessel.Parts[0].partInfo.name == "ScienceBox")) return true;
-            ScreenMessages.PostScreenMessage(Localizer.Format("#KWLOC_recoveryFailMsg"));
+        public static bool VesselRecoveryCheck(Vessel vessel, bool feedback = true) {
+            if (vessel.LandedInKSC || ScienceUtil.GetExperimentBiome(vessel.mainBody, vessel.latitude, vessel.longitude) == "KSC") return true;
+            else if (vessel.LandedInStockLaunchSite && vessel.Parts.Count == 1 && (vessel.isEVA || vessel.Parts[0].partInfo.name == "ScienceBox")) return true;
+            else if (feedback) ScreenMessages.PostScreenMessage(Localizer.Format("#KWLOC_recoveryFailMsg"));
             return false;
         }
         public static void UpdateEditorPartList() {
@@ -218,6 +182,51 @@ namespace KerbalWitchery {
         public static void ToggleFacilityLock(bool locked) {
             foreach (FieldInfo field in HighLogic.CurrentGame.Parameters.SpaceCenter.GetType().GetFields().Where(f => f.Name != "CanLeaveToMainMenu"))
                 field.SetValue(HighLogic.CurrentGame.Parameters.SpaceCenter, !locked);
+        }
+        public static void SpawnHero() {
+            ProtoCrewMember hero = GetHero();
+            ConfigNode[] parts = new ConfigNode[1] { ProtoVessel.CreatePartNode(hero.gender == ProtoCrewMember.Gender.Female ? "kerbalEVAfemale" : "kerbalEVA",
+                ShipConstruction.GetUniqueFlightID(HighLogic.CurrentGame.flightState), hero) };
+            CelestialBody cb = Planetarium.fetch.Home;
+            Vector3d pos = cb.GetWorldSurfacePosition(-0.08311596808409738, -74.611498206188756, 68.2);
+            Orbit orbit = new Orbit(0, 0, 0, 0, 0, 0, 0, cb);
+            orbit.UpdateFromStateVectors(pos, cb.getRFrmVel(pos), cb, Planetarium.GetUniversalTime());
+            ConfigNode vesselNode = ProtoVessel.CreateVesselNode(hero.name, VesselType.EVA, orbit, 0, parts);
+            vesselNode.SetValue("sit", Vessel.Situations.LANDED.ToString());
+            vesselNode.SetValue("landed", true);
+            vesselNode.SetValue("splashed", false);
+            vesselNode.SetValue("lat", -0.08311596808409738);
+            vesselNode.SetValue("lon", -74.611498206188756);
+            vesselNode.SetValue("alt", 68.2);
+            vesselNode.SetValue("landedAt", cb.name);
+            GamePersistence.SaveGame("persistent", HighLogic.SaveFolder, SaveMode.OVERWRITE);
+            KSCVesselMarkers.fetch.RefreshMarkers();
+        }
+
+        public static void ToggleHelmet(bool enabled, ProtoCrewMember crew, KerbalEVA eva = null) {
+            crew.hasHelmetOn = enabled;
+            if (eva == null) {
+                crew.KerbalRef.helmetTransform.gameObject.SetActive(enabled);
+                crew.KerbalRef.showHelmet = enabled;
+            } else {
+                crew.hasNeckRingOn = enabled;
+                typeof(KerbalEVA).GetField("isHelmetEnabled", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(eva, enabled);
+                typeof(KerbalEVA).GetField("isNeckRingEnabled", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(eva, enabled);
+                eva.helmetTransform.gameObject.SetActive(enabled);
+                eva.neckRingTransform.gameObject.SetActive(enabled);
+                GameEvents.OnHelmetChanged.Fire(eva, enabled, enabled);
+                if (!enabled) typeof(KerbalEVA).GetMethod("UpdateVisorEventStates", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(eva, null);
+            }
+        }
+
+        public static void UpdateHelmets() {
+            foreach (ProtoCrewMember crew in FlightGlobals.ActiveVessel.GetVesselCrew().Where(c => !c.KerbalInventoryModule.ContainsPart("KWhelmet")))
+                ToggleHelmet(false, crew);
+        }
+
+        public static ProtoPartResourceSnapshot[] GetInvResources(string resourceName, ModuleInventoryPart inv) {
+            return inv.storedParts.Values.Where(p => p.snapshot.resources[0]?.resourceName == resourceName).OrderByDescending(p =>
+                p.snapshot.resourcePriorityOffset).Select(p => p.snapshot.resources[0]).ToArray();
         }
 
     }
@@ -281,11 +290,38 @@ namespace KerbalWitchery {
         }
         public Agent Agent() => AgentList.Instance.GetAgent(Name);
         public void SetPlayer() => Leader = KWUtil.GetHero().displayName; // "#autoLOC_8001049";
-        public void UnsetPlayer() => Leader = "#KWLOC_aiControlled";
+        public void Takeover() {
+            HighLogic.CurrentGame.flagURL = Agent().LogoURL;
+            ProtoCrewMember leader = KWUtil.GetHero();
+            Leader = leader.displayName;
+            leader.type = ProtoCrewMember.KerbalType.Crew;
+            UpdateCurrencies();
+            KWUtil.ToggleFacilityLock(false);
+            // KWUtil.UpgradeFacility(SpaceCenterFacility.MissionControl);
+        }
+        public void Quit() {
+            Leader = "#KWLOC_aiControlled";
+            strats.Clear();
+            KWUtil.ToggleFacilityLock(true);
+            List<Vessel> vList = FlightGlobals.Vessels.Where(v => v.vesselType != VesselType.Unknown && v.vesselType != VesselType.SpaceObject).ToList();
+            for (int i = vList.Count - 1; i >= 0; i--) {
+                vList[i].GetVesselCrew()?.ForEach(c => c.StartRespawnPeriod());
+                UnityEngine.Object.DestroyImmediate(vList[i]); }
+        }
+        public bool IsPlayer() => Leader != "#KWLOC_aiControlled";
+        public bool IsJunkyard() => Name == "Jebediah Kerman's Junkyard and Spacecraft Parts Co";
+        public bool IsRnD() => Name == "Research & Development Department";
+        public bool IsKWF() => Name == "Kerbin World-Firsts Record-Keeping Society";
+        public void UnsetPlayer() { Leader = "#KWLOC_aiControlled"; strats.Clear(); }
+        public bool CanTakeover() => IsRnD(); // Funding.Instance.Funds >= Value && Reputation.CurrentRep >= Rep;
         public void AddValue(double amount) => Value += amount;
         public void SetValue(double amount) => Value = amount;
         public void AddRep(float amount) => Rep += amount;
         public void SetRep(float amount) => Rep = amount;
+        public void UpdateCurrencies() {
+            Rep = Reputation.CurrentRep;
+            Value = Funding.Instance.Funds;
+        }
         public void AddSci(CelestialBody body, SciType type, float amount) => Sci[body.name][type] += amount;
         public void ToggleStrat(KWUI.Mode strat, bool? active = null) => strats[strat] = active ?? (strats.ContainsKey(strat) ? !strats[strat] : true);
         public bool StratActive(KWUI.Mode strat) => strats.ContainsKey(strat) ? strats[strat] : false;
@@ -296,6 +332,56 @@ namespace KerbalWitchery {
 
     }
     
+    public class Kerb {
+        public ProtoCrewMember Crew { get; private set; }
+        public double OxLoss { get; private set; }
+        // public double EdLoss { get; private set; }
+        // public double AqLoss { get; private set; }
+        public Kerb(ProtoCrewMember crew) => Crew = crew;
+        public Kerb(ConfigNode node) {
+            Crew = HighLogic.CurrentGame.CrewRoster[node.GetValue("name")];
+            OxLoss = double.Parse(node.GetValue("oxLoss"));
+            // EdLoss = double.Parse(node.GetValue("edLoss"));
+            // AqLoss = double.Parse(node.GetValue("aqLoss"));
+        }
+        public void Save(ConfigNode node) {
+            ConfigNode kNode = node.AddNode("Kerb");
+            kNode.AddValue("name", Crew.name);
+            kNode.AddValue("oxLoss", OxLoss);
+            // kNode.AddValue("edLoss", OxLoss);
+            // kNode.AddValue("aqLoss", OxLoss);
+        }
+        public void AddOxLoss(double amount) {
+            if (OxLoss == 0 && amount > 0)
+                if (TimeWarp.CurrentRateIndex > 0) AlarmClockScenario.AddAlarm(new AlarmTypeRaw {
+                    title = $"{Localizer.Format("#autoLOC_236416")} {Crew.displayName}: {Localizer.Format("#autoLOC_244419", PartResourceLibrary.Instance.GetDefinition("Oxygen").displayName)}",
+                    ut = Planetarium.GetUniversalTime() + 1, actions = { warp = AlarmActions.WarpEnum.KillWarp, message = AlarmActions.MessageEnum.Yes }});
+                else ScreenMessages.PostScreenMessage($"{Localizer.Format("#autoLOC_236416")} {Crew.displayName}: {Localizer.Format("#autoLOC_244419", PartResourceLibrary.Instance.GetDefinition("Oxygen").displayName)}");
+            OxLoss += amount;
+            if (OxLoss < 0) OxLoss = 0;
+        }
+        //public void AddEdLoss(double amount) {
+        //    if (EdLoss == 0 && amount > 0)
+        //        if (TimeWarp.CurrentRateIndex > 0) AlarmClockScenario.AddAlarm(new AlarmTypeRaw {
+        //            title = $"{Localizer.Format("#autoLOC_236416")} {Crew.displayName}: {Localizer.Format("#autoLOC_244419", PartResourceLibrary.Instance.GetDefinition("Edibles").displayName)}",
+        //            ut = Planetarium.GetUniversalTime() + 1, actions = { warp = AlarmActions.WarpEnum.KillWarp, message = AlarmActions.MessageEnum.Yes }
+        //        });
+        //        else ScreenMessages.PostScreenMessage($"{Localizer.Format("#autoLOC_236416")} {Crew.displayName}: {Localizer.Format("#autoLOC_244419", PartResourceLibrary.Instance.GetDefinition("Edibles").displayName)}");
+        //    EdLoss += amount;
+        //    if (EdLoss < 0) EdLoss = 0;
+        //}
+        //public void AddAqLoss(double amount) {
+        //    if (AqLoss == 0 && amount > 0)
+        //        if (TimeWarp.CurrentRateIndex > 0) AlarmClockScenario.AddAlarm(new AlarmTypeRaw {
+        //            title = $"{Localizer.Format("#autoLOC_236416")} {Crew.displayName}: {Localizer.Format("#autoLOC_244419", PartResourceLibrary.Instance.GetDefinition("Aqua").displayName)}",
+        //            ut = Planetarium.GetUniversalTime() + 1, actions = { warp = AlarmActions.WarpEnum.KillWarp, message = AlarmActions.MessageEnum.Yes }
+        //        });
+        //        else ScreenMessages.PostScreenMessage($"{Localizer.Format("#autoLOC_236416")} {Crew.displayName}: {Localizer.Format("#autoLOC_244419", PartResourceLibrary.Instance.GetDefinition("Aqua").displayName)}");
+        //    AqLoss += amount;
+        //    if (AqLoss < 0) AqLoss = 0;
+        //}
+    }
+
     public class FacilityAddon {
         public string TechID { get; private set; }
         public string Title { get; private set; }
